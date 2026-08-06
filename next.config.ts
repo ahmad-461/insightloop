@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  webpack: (config, { isServer }) => {
+    // Avoid webpack critical dependency warnings for duckdb dynamic imports
+    config.module.exprContextCritical = false;
+    return config;
+  },
 };
 
 export default nextConfig;

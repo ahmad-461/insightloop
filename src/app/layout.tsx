@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { BarChart3, Database, MessageSquare } from "lucide-react";
 import "./globals.css";
+import { DuckDBProvider } from "@/context/DuckDBContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,7 +19,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-background text-foreground antialiased min-h-screen flex flex-col`}>
-        {/* Simple Header */}
+        <DuckDBProvider>
+          {/* Simple Header */}
         <header className="border-b border-gray-800 bg-surface px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="bg-accent/10 p-2 rounded-lg border border-accent/20">
@@ -42,10 +44,11 @@ export default function RootLayout({
           </nav>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 flex flex-col">
-          {children}
-        </main>
+          {/* Page Content */}
+          <main className="flex-1 flex flex-col">
+            {children}
+          </main>
+        </DuckDBProvider>
       </body>
     </html>
   );

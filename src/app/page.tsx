@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useTransition } from "react";
+import React, { useState, useRef, useTransition, useEffect } from "react";
 import {
   Upload,
   FileSpreadsheet,
@@ -12,7 +12,13 @@ import {
   Tag,
   Type,
   Trash2,
-  TableProperties
+  TableProperties,
+  Terminal,
+  Play,
+  CheckCircle,
+  Server,
+  CodeXml,
+  ChevronRight
 } from "lucide-react";
 import {
   parseCSV,
@@ -22,8 +28,8 @@ import {
   ParsedResult,
   ColumnSchema
 } from "../utils/parser";
+import { useDuckDB } from "@/context/DuckDBContext";
 
-// Constants for Tailwind-friendly hex colors and layout spacing
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 export default function Home() {
@@ -33,9 +39,33 @@ export default function Home() {
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // DuckDB Integration State
+  const { loading: dbLoading, error: dbError, datasetLoaded, loadDataset, runQuery } = useDuckDB();
+  const [syncStatus, setSyncStatus] = useState<{ loading: boolean; error: string | null }>({ loading: false, error: null });
+  const [sqlQuery, setSqlQuery] = useState("SELECT * FROM dataset LIMIT 10");
+  const [queryResults, setQueryResults] = useState<Record<string, unknown>[] | null>(null);
+  const [queryError, setQueryError] = useState<string | null>(null);
+  const [queryRunning, setQueryRunning] = useState(false);
+
+  // Automatic DuckDB Load / Re-creation sync effect
+  useEffect(() => {
+    if (parsedData) {
+      setSyncStatus({ loading: true, error: null });
+      loadDataset(parsedData).then((res) => {
+        if (res.success) {
+          setSyncStatus({ loading: false, error: null });
+        } else {
+          setSyncStatus({ loading: false, error: res.error || "Failed to load database." });
+        }
+      });
+    }
+  }, [parsedData, loadDataset]); // Automatically re-triggers when overrides update parsedData schema or loadDataset is changed
+
   // Handle parsing a selected File
   const handleFileProcess = (file: File) => {
     setError(null);
+    setQueryResults(null);
+    setQueryError(null);
 
     // Enforce 5MB limit client-side
     if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -102,6 +132,9 @@ export default function Home() {
   const handleClear = () => {
     setParsedData(null);
     setError(null);
+    setQueryResults(null);
+    setQueryError(null);
+    setSqlQuery("SELECT * FROM dataset LIMIT 10");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -122,6 +155,25 @@ export default function Home() {
       ...parsedData,
       schema: updatedSchema,
     });
+  };
+
+  // Handle running raw SQL Query against DuckDB
+  const handleRunQuery = async (queryToRun: string = sqlQuery) => {
+    setQueryRunning(true);
+    setQueryError(null);
+    setQueryResults(null);
+    try {
+      const result = await runQuery(queryToRun);
+      if ("error" in result) {
+        setQueryError(result.error);
+      } else {
+        setQueryResults(result);
+      }
+    } catch (err: unknown) {
+      setQueryError(err instanceof Error ? err.message : "An unexpected error occurred while running the query.");
+    } finally {
+      setQueryRunning(false);
+    }
   };
 
   // Format bytes helper
@@ -160,6 +212,34 @@ export default function Home() {
       case "text": return "📝 text";
     }
   };
+
+  // Helpers to resolve dynamic query columns based on actual schema for dynamic testing
+  const getFirstCol = () => parsedData?.schema[0]?.sqlSafeName || "column_1";
+  const getCategoryCol = () => parsedData?.schema.find(c => c.currentType === "category")?.sqlSafeName || getFirstCol();
+  const getNumCol = () => parsedData?.schema.find(c => c.currentType === "number" || c.currentType === "currency")?.sqlSafeName || getFirstCol();
+
+  const samples = parsedData ? [
+    {
+      label: "🔍 SELECT 10 ROWS",
+      query: "SELECT * FROM dataset LIMIT 10",
+      description: "Returns the first 10 rows of the dataset"
+    },
+    {
+      label: "📊 COUNT TOTAL ROWS",
+      query: "SELECT COUNT(*) as total_rows FROM dataset",
+      description: "Gets the total row count"
+    },
+    {
+      label: "🏷️ GROUP BY CATEGORY",
+      query: `SELECT "${getCategoryCol()}", COUNT(*) as count FROM dataset GROUP BY "${getCategoryCol()}" ORDER BY count DESC LIMIT 5`,
+      description: `Counts items grouped by the '${getCategoryCol()}' column`
+    },
+    {
+      label: "📈 AGGREGATE VALUES",
+      query: `SELECT COUNT(*) as total_rows, SUM("${getNumCol()}") as sum_total, AVG("${getNumCol()}") as average_val FROM dataset`,
+      description: `Aggregates sum and average for the '${getNumCol()}' column`
+    }
+  ] : [];
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 space-y-8">
@@ -246,7 +326,7 @@ export default function Home() {
 
       {/* Parsed Output / Preview Panel */}
       {parsedData && (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-8 animate-fade-in">
           {/* File summary bar */}
           <div className="bg-surface border border-gray-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
@@ -396,6 +476,201 @@ export default function Home() {
                 <span>Remaining {parsedData.rawRows.length - 20} rows omitted from preview.</span>
               )}
             </div>
+          </div>
+
+          {/* 🛠️ Debug SQL Console (Visible only after a file is loaded) */}
+          <div className="bg-surface border border-gray-800 rounded-xl p-6 space-y-6">
+
+            {/* Console Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20">
+                  <Terminal className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Debug SQL Console</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Run real-time analytical SQL queries directly on your dataset.</p>
+                </div>
+              </div>
+
+              {/* Status Banner */}
+              <div className="flex items-center space-x-2 bg-gray-950 border border-gray-800 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                {dbLoading ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 text-blue-400 animate-spin" />
+                    <span className="text-blue-400">Initializing DuckDB WASM...</span>
+                  </>
+                ) : dbError ? (
+                  <>
+                    <AlertCircle className="h-3 w-3 text-rose-500" />
+                    <span className="text-rose-400">DuckDB Error: {dbError}</span>
+                  </>
+                ) : syncStatus.loading ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 text-amber-500 animate-spin" />
+                    <span className="text-amber-400">Syncing database schema...</span>
+                  </>
+                ) : syncStatus.error ? (
+                  <>
+                    <AlertCircle className="h-3 w-3 text-rose-500" />
+                    <span className="text-rose-400">Sync failed: {syncStatus.error}</span>
+                  </>
+                ) : datasetLoaded ? (
+                  <>
+                    <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="text-emerald-400 font-semibold">DB synced: &apos;dataset&apos; active</span>
+                  </>
+                ) : (
+                  <>
+                    <Server className="h-3 w-3 text-gray-500" />
+                    <span className="text-gray-400">DuckDB idle</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Sample Queries */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Quick Test Queries</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {samples.map((sample, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSqlQuery(sample.query);
+                      handleRunQuery(sample.query);
+                    }}
+                    className="flex flex-col items-start p-3 bg-gray-950 hover:bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-lg text-left transition"
+                  >
+                    <span className="text-xs font-bold text-blue-400 flex items-center space-x-1">
+                      <span>{sample.label}</span>
+                      <ChevronRight className="h-3 w-3" />
+                    </span>
+                    <span className="text-[10px] text-gray-400 mt-1 leading-snug">{sample.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Input Console */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label htmlFor="query-console" className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  SQL Query Input
+                </label>
+                <span className="text-[10px] text-gray-500 font-medium">Table name: <code className="bg-gray-950 px-1 py-0.5 rounded text-gray-300">dataset</code></span>
+              </div>
+              <div className="relative">
+                <textarea
+                  id="query-console"
+                  value={sqlQuery}
+                  onChange={(e) => setSqlQuery(e.target.value)}
+                  className="w-full h-32 bg-gray-950 border border-gray-800 focus:border-accent rounded-lg p-4 font-mono text-sm text-gray-100 placeholder-gray-700 outline-none transition focus:ring-1 focus:ring-accent/30"
+                  placeholder="SELECT * FROM dataset LIMIT 10..."
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleRunQuery()}
+                disabled={queryRunning || dbLoading || syncStatus.loading}
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 bg-accent hover:bg-blue-600 disabled:bg-gray-800 text-white font-semibold rounded-lg text-sm transition disabled:cursor-not-allowed shadow-lg shadow-accent/10"
+              >
+                {queryRunning ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span>Executing Query...</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 fill-white" />
+                    <span>Run Query</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Query Error Area */}
+            {queryError && (
+              <div className="flex items-start space-x-3 p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl animate-fade-in">
+                <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-rose-400">Query Failed</p>
+                  <p className="text-xs text-gray-300 leading-relaxed font-mono">{queryError}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Query Results Area */}
+            {queryResults !== null && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Query Output</span>
+                  <span className="text-xs text-emerald-400 font-semibold bg-emerald-950/20 px-2.5 py-1 border border-emerald-900/30 rounded-full">
+                    Returned {queryResults.length.toLocaleString()} row{queryResults.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                {queryResults.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-950 border border-gray-800 rounded-lg">
+                    <CodeXml className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">No rows matching your query were found.</p>
+                  </div>
+                ) : (
+                  <div className="bg-gray-950 border border-gray-800 rounded-lg overflow-hidden flex flex-col max-h-96">
+                    <div className="overflow-x-auto w-full">
+                      <table className="w-full text-left border-collapse table-auto">
+                        <thead>
+                          <tr className="border-b border-gray-800 bg-background/50">
+                            {Object.keys(queryResults[0]).map((colName) => (
+                              <th
+                                key={colName}
+                                className="px-5 py-3 font-semibold text-xs text-gray-400 uppercase tracking-wider border-r border-gray-800 last:border-r-0"
+                              >
+                                {colName}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                          {queryResults.slice(0, 100).map((row, rowIdx) => (
+                            <tr
+                              key={rowIdx}
+                              className="hover:bg-gray-900/20 transition-colors"
+                            >
+                              {Object.keys(queryResults[0]).map((colName) => {
+                                const val = row[colName];
+                                return (
+                                  <td
+                                    key={colName}
+                                    className="px-5 py-2.5 text-sm border-r border-gray-800 last:border-r-0 text-gray-200"
+                                  >
+                                    {val === null || val === undefined ? (
+                                      <span className="text-gray-600 italic text-xs">null</span>
+                                    ) : typeof val === "object" ? (
+                                      JSON.stringify(val)
+                                    ) : (
+                                      String(val)
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {queryResults.length > 100 && (
+                      <div className="px-5 py-3 bg-background/30 text-[11px] text-gray-500 border-t border-gray-800">
+                        * Query output truncated. Showing first 100 rows.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
       )}
