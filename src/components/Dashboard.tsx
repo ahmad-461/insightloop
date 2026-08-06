@@ -616,18 +616,18 @@ export default function Dashboard({
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, idx) => (
-            <div key={idx} className="bg-[#111827] border border-gray-800 p-5 rounded-xl space-y-3">
-              <div className="h-4 w-24 bg-gray-800 rounded"></div>
-              <div className="h-8 w-32 bg-gray-800 rounded"></div>
-              <div className="h-3 w-44 bg-gray-800 rounded pt-2"></div>
+            <div key={idx} className="bg-surface border border-surface-light p-5 rounded-2xl space-y-3">
+              <div className="h-4 w-24 bg-surface-light rounded"></div>
+              <div className="h-8 w-32 bg-surface-light rounded"></div>
+              <div className="h-3 w-44 bg-surface-light rounded pt-2"></div>
             </div>
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[...Array(2)].map((_, idx) => (
-            <div key={idx} className="bg-[#111827] border border-gray-800 p-6 rounded-xl space-y-4">
-              <div className="h-5 w-48 bg-gray-800 rounded"></div>
-              <div className="h-64 w-full bg-gray-800/50 rounded"></div>
+            <div key={idx} className="bg-surface border border-surface-light p-6 rounded-2xl space-y-4">
+              <div className="h-5 w-48 bg-surface-light rounded"></div>
+              <div className="h-64 w-full bg-surface-light/40 rounded"></div>
             </div>
           ))}
         </div>
@@ -637,24 +637,24 @@ export default function Dashboard({
 
   if (error) {
     return (
-      <div className="flex items-start space-x-3 p-5 bg-rose-950/20 border border-rose-900/30 rounded-xl">
+      <div className="flex items-start space-x-3 p-5 bg-rose-950/20 border border-rose-900/30 rounded-2xl">
         <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
         <div className="space-y-1">
           <p className="text-sm font-semibold text-rose-400">Dashboard Generation Error</p>
-          <p className="text-xs text-gray-300 leading-relaxed font-mono">{error}</p>
+          <p className="text-xs text-muted leading-relaxed font-mono">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in font-sans">
 
-      {/* 🛠️ Dashboard Toolbar */}
-      <div className="bg-[#111827] border border-gray-800 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* 🛠 Dashboard Toolbar */}
+      <div className="bg-surface border border-surface-light p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-glow-accent">
         <div className="flex items-center space-x-2">
-          <Sparkles className="h-4 w-4 text-blue-400 animate-pulse" />
-          <span className="text-sm font-bold text-white uppercase tracking-wider">Dashboard Controls</span>
+          <Sparkles className="h-4 w-4 text-secondary-light animate-pulse" />
+          <span className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Dashboard Controls</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -664,10 +664,10 @@ export default function Dashboard({
               setShowAddForm(!showAddForm);
               setNewType("kpi");
             }}
-            className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none ${
               showAddForm
-                ? "bg-gray-800 border-gray-700 text-white"
-                : "bg-blue-950/35 text-blue-400 border-blue-900/40 hover:bg-blue-900/40 hover:border-blue-800"
+                ? "bg-surface-light border-surface-light text-white"
+                : "bg-secondary/10 text-secondary-light border-secondary/20 hover:bg-secondary/20 hover:border-secondary-light/40 shadow-glow-secondary"
             }`}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -677,7 +677,7 @@ export default function Dashboard({
           {/* Reset to Defaults */}
           <button
             onClick={initializeDashboardWidgets}
-            className="flex items-center space-x-2 px-3.5 py-1.5 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800 rounded-lg text-xs font-semibold transition"
+            className="flex items-center space-x-2 px-4 py-2 bg-background hover:bg-surface-light text-muted hover:text-white border border-surface-light rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
             title="Restore original charts & KPI cards"
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -687,7 +687,7 @@ export default function Dashboard({
           {/* Save Dashboard */}
           <button
             onClick={triggerSaveModal}
-            className="flex items-center space-x-2 px-4 py-1.5 bg-accent hover:bg-blue-600 text-white rounded-lg text-xs font-bold shadow-md shadow-accent/15 transition"
+            className="flex items-center space-x-2 px-4.5 py-2 bg-accent hover:bg-accent-light text-white rounded-xl text-xs font-extrabold shadow-glow-accent hover:shadow-glow-secondary transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
           >
             <Save className="h-3.5 w-3.5" />
             <span>Save Dashboard</span>
@@ -697,30 +697,30 @@ export default function Dashboard({
 
       {/* ➕ "Add Custom Widget" Sliding Panel */}
       {showAddForm && (
-        <div className="bg-[#111827] border border-gray-800 p-6 rounded-xl space-y-5 animate-fade-in relative">
+        <div className="bg-surface border border-surface-light p-6 rounded-2xl space-y-5 animate-fade-in relative shadow-glow-secondary">
           <button
             onClick={() => setShowAddForm(false)}
-            className="absolute top-4 right-4 text-gray-500 hover:text-white transition"
+            className="absolute top-4 right-4 text-muted hover:text-white transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded p-1"
           >
             <X className="h-4 w-4" />
           </button>
 
           <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Configure Custom Widget</h3>
-            <p className="text-xs text-gray-400 mt-1">Specify layout configuration and aggregates to construct a new chart or KPI card.</p>
+            <h3 className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Configure Custom Widget</h3>
+            <p className="text-xs text-muted mt-1 font-semibold">Specify layout configuration and aggregates to construct a new chart or KPI card.</p>
           </div>
 
           {/* Tabs for Widget Type */}
-          <div className="grid grid-cols-3 gap-2 border-b border-gray-850 pb-4">
+          <div className="grid grid-cols-3 gap-2 border-b border-surface-light pb-4">
             {(["kpi", "line", "bar"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setNewType(t)}
-                className={`py-2 px-4 rounded-lg text-xs font-bold border transition uppercase tracking-wider ${
+                className={`py-2 px-4 rounded-xl text-xs font-extrabold border transition-all duration-350 uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none ${
                   newType === t
-                    ? "bg-accent border-accent text-white"
-                    : "bg-gray-950 border-gray-850 text-gray-400 hover:text-white"
+                    ? "bg-accent border-accent text-white shadow-glow-accent"
+                    : "bg-background border-surface-light text-muted hover:text-white"
                 }`}
               >
                 {t === "kpi" ? "🔢 KPI Card" : t === "line" ? "📈 Line Chart" : "📊 Bar Chart"}
@@ -728,16 +728,16 @@ export default function Dashboard({
             ))}
           </div>
 
-          <form onSubmit={handleAddWidget} className="space-y-4 text-xs">
+          <form onSubmit={handleAddWidget} className="space-y-4 text-xs font-medium">
             {/* Custom Optional Title */}
             <div className="flex flex-col space-y-1.5">
-              <label className="font-bold text-gray-400">Custom Title (Optional)</label>
+              <label className="font-bold text-muted">Custom Title (Optional)</label>
               <input
                 type="text"
                 placeholder="Leave blank for auto-generated title"
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
-                className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent font-medium text-xs placeholder-gray-700"
+                className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary font-bold text-xs placeholder-muted/35 focus-visible:ring-2 focus-visible:ring-secondary/20"
               />
             </div>
 
@@ -745,11 +745,11 @@ export default function Dashboard({
             {newType === "kpi" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col space-y-1.5">
-                  <label className="font-bold text-gray-400">Select Column</label>
+                  <label className="font-bold text-muted">Select Column</label>
                   <select
                     value={kpiCol}
                     onChange={(e) => setKpiCol(e.target.value)}
-                    className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent cursor-pointer text-xs"
+                    className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                   >
                     <option value="row_count">📝 Dataset Row Count (Standard COUNT)</option>
                     {numCols.map((col) => (
@@ -761,12 +761,12 @@ export default function Dashboard({
                 </div>
 
                 <div className="flex flex-col space-y-1.5">
-                  <label className="font-bold text-gray-400">Aggregation Method</label>
+                  <label className="font-bold text-muted">Aggregation Method</label>
                   <select
                     value={kpiAgg}
                     disabled={kpiCol === "row_count"}
                     onChange={(e) => setKpiAgg(e.target.value as "SUM" | "AVG" | "MIN" | "MAX" | "COUNT")}
-                    className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs"
+                    className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                   >
                     <option value="SUM">SUM (Total Aggregate)</option>
                     <option value="AVG">AVG (Average)</option>
@@ -782,18 +782,18 @@ export default function Dashboard({
             {newType === "line" && (
               <div className="space-y-4">
                 {dateCols.length === 0 || numCols.length === 0 ? (
-                  <div className="p-4 bg-amber-950/20 border border-amber-900/30 rounded-lg text-amber-400 leading-relaxed">
+                  <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl text-warning leading-relaxed font-bold">
                     Line charts require at least <strong>1 Date column</strong> and <strong>1 Numeric/Currency column</strong>.
                     Please change your column types in the preview panel above if necessary.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="flex flex-col space-y-1.5">
-                      <label className="font-bold text-gray-400">Date Dimension</label>
+                      <label className="font-bold text-muted">Date Dimension</label>
                       <select
                         value={lineDateCol}
                         onChange={(e) => setLineDateCol(e.target.value)}
-                        className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent cursor-pointer text-xs"
+                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
                         {dateCols.map((col) => (
                           <option key={col.columnName} value={col.columnName}>
@@ -804,11 +804,11 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex flex-col space-y-1.5">
-                      <label className="font-bold text-gray-400">Metric Value</label>
+                      <label className="font-bold text-muted">Metric Value</label>
                       <select
                         value={lineMetricCol}
                         onChange={(e) => setLineMetricCol(e.target.value)}
-                        className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent cursor-pointer text-xs"
+                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
                         {numCols.map((col) => (
                           <option key={col.columnName} value={col.columnName}>
@@ -819,11 +819,11 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex flex-col space-y-1.5">
-                      <label className="font-bold text-gray-400">Trend Aggregation</label>
+                      <label className="font-bold text-muted">Trend Aggregation</label>
                       <select
                         value={lineAgg}
                         onChange={(e) => setLineAgg(e.target.value as "SUM" | "AVG")}
-                        className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent cursor-pointer text-xs"
+                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
                         <option value="SUM">SUM (Total over time)</option>
                         <option value="AVG">AVG (Average over time)</option>
@@ -831,11 +831,11 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex flex-col space-y-1.5">
-                      <label className="font-bold text-gray-400">Time Bucket Granularity</label>
+                      <label className="font-bold text-muted">Time Bucket Granularity</label>
                       <select
                         value={lineGran}
                         onChange={(e) => setLineGran(e.target.value as "daily" | "monthly")}
-                        className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent cursor-pointer text-xs"
+                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
                         <option value="daily">📅 Daily Buckets</option>
                         <option value="monthly">📆 Monthly Buckets</option>
@@ -850,18 +850,18 @@ export default function Dashboard({
             {newType === "bar" && (
               <div className="space-y-4">
                 {catCols.length === 0 ? (
-                  <div className="p-4 bg-amber-950/20 border border-amber-900/30 rounded-lg text-amber-400 leading-relaxed">
+                  <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl text-warning leading-relaxed font-bold">
                     Bar charts require at least <strong>1 Category column</strong>.
                     Please change your column types in the preview panel above if necessary.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col space-y-1.5">
-                      <label className="font-bold text-gray-400">Category Dimension</label>
+                      <label className="font-bold text-muted">Category Dimension</label>
                       <select
                         value={barCatCol}
                         onChange={(e) => setBarCatCol(e.target.value)}
-                        className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent cursor-pointer text-xs"
+                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
                         {catCols.map((col) => (
                           <option key={col.columnName} value={col.columnName}>
@@ -872,11 +872,11 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex flex-col space-y-1.5">
-                      <label className="font-bold text-gray-400">Aggregate Metric</label>
+                      <label className="font-bold text-muted">Aggregate Metric</label>
                       <select
                         value={barMetricCol}
                         onChange={(e) => setBarMetricCol(e.target.value)}
-                        className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent cursor-pointer text-xs"
+                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
                         <option value="row_count">📝 Row Count (Frequency of Categories)</option>
                         {numCols.map((col) => (
@@ -888,12 +888,12 @@ export default function Dashboard({
                     </div>
 
                     <div className="flex flex-col space-y-1.5">
-                      <label className="font-bold text-gray-400">Aggregation Method</label>
+                      <label className="font-bold text-muted">Aggregation Method</label>
                       <select
                         value={barAgg}
                         disabled={!barMetricCol || barMetricCol === "row_count"}
                         onChange={(e) => setBarAgg(e.target.value as "SUM" | "COUNT")}
-                        className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs"
+                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
                         <option value="SUM">SUM (Total Metric SUM)</option>
                         <option value="COUNT">COUNT (Count of records)</option>
@@ -912,7 +912,7 @@ export default function Dashboard({
                   (newType === "line" && (dateCols.length === 0 || numCols.length === 0)) ||
                   (newType === "bar" && catCols.length === 0)
                 }
-                className="flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-850 disabled:text-gray-500 text-white font-bold rounded-lg transition"
+                className="flex items-center space-x-2 px-6 py-3 bg-accent hover:bg-accent-light disabled:bg-surface-light/40 disabled:text-muted/40 text-white font-extrabold rounded-xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-glow-accent"
               >
                 <Plus className="h-4 w-4" />
                 <span>Create Widget</span>
@@ -924,10 +924,10 @@ export default function Dashboard({
 
       {/* 🚀 Active Layout Widgets Render Grid */}
       {widgets.length === 0 ? (
-        <div className="text-center py-16 px-6 bg-[#111827] border border-gray-800 rounded-xl space-y-4">
-          <Sparkles className="h-10 w-10 text-gray-600 mx-auto" />
-          <h3 className="text-base font-bold text-white">Your dashboard is empty</h3>
-          <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
+        <div className="text-center py-16 px-6 bg-surface border border-surface-light rounded-2xl space-y-4">
+          <Sparkles className="h-10 w-10 text-muted/30 mx-auto animate-pulse" />
+          <h3 className="font-display text-base font-bold text-white">Your dashboard is empty</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed font-semibold">
             All widgets were removed. Click &quot;Add Custom Widget&quot; to manually customize your layout or click &quot;Reset to Defaults&quot; to restore automatic configurations.
           </p>
         </div>
@@ -946,23 +946,23 @@ export default function Dashboard({
             return (
               <div
                 key={widget.id}
-                className={`${gridColSpan} bg-[#111827] border border-gray-800 rounded-xl flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-gray-700/80 transition-all p-5 h-full`}
-                style={{ minHeight: isKpi ? "160px" : "360px" }}
+                className={`${gridColSpan} bg-surface border border-surface-light rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-accent-light/40 hover:shadow-glow-accent transition-all duration-300 p-5 h-full`}
+                style={{ minHeight: isKpi ? "170px" : "370px" }}
               >
                 {/* Header Action Row */}
-                <div className="flex items-start justify-between border-b border-gray-850 pb-3 mb-4">
+                <div className="flex items-start justify-between border-b border-surface-light pb-3 mb-4">
                   <div className="flex items-center space-x-2 truncate pr-2">
-                    {widget.type === "line" && <TrendingUp className="h-4 w-4 text-[#3b82f6]" />}
-                    {widget.type === "bar" && <BarChart3 className="h-4 w-4 text-[#10b981]" />}
+                    {widget.type === "line" && <TrendingUp className="h-4 w-4 text-accent-light" />}
+                    {widget.type === "bar" && <BarChart3 className="h-4 w-4 text-success" />}
                     {isKpi && (
                       widget.metadata.metricType === "currency" ? (
-                        <DollarSign className="h-4 w-4 text-amber-400" />
+                        <DollarSign className="h-4 w-4 text-warning" />
                       ) : (
-                        <Hash className="h-4 w-4 text-blue-400" />
+                        <Hash className="h-4 w-4 text-secondary-light" />
                       )
                     )}
                     <h3
-                      className="text-xs font-bold text-white tracking-wide uppercase truncate max-w-[150px] sm:max-w-[200px]"
+                      className="font-display text-xs font-extrabold text-white tracking-wide uppercase truncate max-w-[150px] sm:max-w-[200px]"
                       title={widget.title}
                     >
                       {widget.title}
@@ -970,13 +970,13 @@ export default function Dashboard({
                   </div>
 
                   {/* Move up / Move down / Delete Action Buttons */}
-                  <div className="flex items-center space-x-0.5 flex-shrink-0 bg-gray-950/40 border border-gray-850/50 p-1 rounded-lg">
+                  <div className="flex items-center space-x-0.5 flex-shrink-0 bg-background/50 border border-surface-light p-1 rounded-lg">
                     <button
                       type="button"
                       onClick={() => moveWidget(index, "up")}
                       disabled={index === 0}
                       title="Move Up"
-                      className="p-1 text-gray-500 hover:text-white hover:bg-gray-800 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                      className="p-1 text-muted hover:text-white hover:bg-surface-light rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
                     >
                       <ChevronUp className="h-3.5 w-3.5" />
                     </button>
@@ -985,16 +985,16 @@ export default function Dashboard({
                       onClick={() => moveWidget(index, "down")}
                       disabled={index === widgets.length - 1}
                       title="Move Down"
-                      className="p-1 text-gray-500 hover:text-white hover:bg-gray-800 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                      className="p-1 text-muted hover:text-white hover:bg-surface-light rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
                     >
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
-                    <div className="w-[1px] h-3.5 bg-gray-850 mx-1" />
+                    <div className="w-[1px] h-3.5 bg-surface-light mx-1" />
                     <button
                       type="button"
                       onClick={() => removeWidget(widget.id)}
                       title="Remove Widget"
-                      className="p-1 text-gray-500 hover:text-rose-400 hover:bg-rose-950/40 rounded transition"
+                      className="p-1 text-muted hover:text-rose-400 hover:bg-rose-950/40 rounded-md transition"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -1005,9 +1005,9 @@ export default function Dashboard({
                 <div className="flex-1 flex flex-col justify-center">
                   {/* Error State */}
                   {errorMsg && (
-                    <div className="flex items-start space-x-2 text-rose-500 p-2 bg-rose-950/10 border border-rose-950/20 rounded">
+                    <div className="flex items-start space-x-2 text-rose-500 p-2 bg-rose-950/10 border border-rose-950/20 rounded-xl">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span className="text-[10px] font-semibold leading-relaxed font-mono truncate max-w-[240px]" title={errorMsg}>
+                      <span className="text-[10px] font-bold leading-relaxed font-mono truncate max-w-[240px]" title={errorMsg}>
                         {errorMsg}
                       </span>
                     </div>
@@ -1016,14 +1016,14 @@ export default function Dashboard({
                   {/* Loading State */}
                   {isWidgetLoading && (
                     <div className="flex items-center justify-center space-x-2 py-4">
-                      <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
-                      <span className="text-[10px] text-gray-400 font-bold">Querying DuckDB...</span>
+                      <RefreshCw className="h-4 w-4 text-secondary animate-spin" />
+                      <span className="text-[10px] text-muted font-extrabold uppercase tracking-wider">Querying DuckDB...</span>
                     </div>
                   )}
 
                   {/* No Data State */}
                   {!isWidgetLoading && !errorMsg && (!data || data.length === 0) && (
-                    <div className="text-center text-gray-600 italic text-[11px] py-4">
+                    <div className="text-center text-muted italic text-[11px] py-4 font-semibold">
                       No results returned.
                     </div>
                   )}
@@ -1056,29 +1056,29 @@ export default function Dashboard({
                         return (
                           <div className="flex flex-col justify-between h-full">
                             <div>
-                              <span className="text-3xl font-extrabold text-white block tracking-tight truncate">
+                              <span className="text-3xl font-extrabold text-white block tracking-tight truncate font-display">
                                 {formatNumber(mainVal, metricType, sym)}
                               </span>
                             </div>
 
                             {/* Sub-aggregates details */}
                             {hasSubMetrics && widget.id !== "kpi_total_rows" && (
-                              <div className="grid grid-cols-3 gap-1.5 text-[9px] text-gray-400 font-bold mt-4 pt-2.5 border-t border-gray-850">
+                              <div className="grid grid-cols-3 gap-1.5 text-[9px] text-muted font-bold mt-4 pt-2.5 border-t border-surface-light">
                                 <div>
-                                  <span className="text-gray-500 block uppercase tracking-wide text-[8px]">Average</span>
-                                  <span className="truncate block mt-0.5 text-gray-200" title={formatNumber(row.a as number, metricType, sym)}>
+                                  <span className="text-muted/60 block uppercase tracking-wide text-[8px]">Average</span>
+                                  <span className="truncate block mt-0.5 text-foreground" title={formatNumber(row.a as number, metricType, sym)}>
                                     {formatNumber(row.a as number, metricType, sym)}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="text-gray-500 block uppercase tracking-wide text-[8px]">Minimum</span>
-                                  <span className="truncate block mt-0.5 text-gray-200" title={formatNumber(row.mn as number, metricType, sym)}>
+                                  <span className="text-muted/60 block uppercase tracking-wide text-[8px]">Minimum</span>
+                                  <span className="truncate block mt-0.5 text-foreground" title={formatNumber(row.mn as number, metricType, sym)}>
                                     {formatNumber(row.mn as number, metricType, sym)}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="text-gray-500 block uppercase tracking-wide text-[8px]">Maximum</span>
-                                  <span className="truncate block mt-0.5 text-gray-200" title={formatNumber((row.max ?? row.mx) as number, metricType, sym)}>
+                                  <span className="text-muted/60 block uppercase tracking-wide text-[8px]">Maximum</span>
+                                  <span className="truncate block mt-0.5 text-foreground" title={formatNumber((row.max ?? row.mx) as number, metricType, sym)}>
                                     {formatNumber((row.max ?? row.mx) as number, metricType, sym)}
                                   </span>
                                 </div>
@@ -1086,7 +1086,7 @@ export default function Dashboard({
                             )}
 
                             {!hasSubMetrics && (
-                              <div className="text-[10px] text-gray-500 font-semibold mt-3 pt-2.5 border-t border-gray-850">
+                              <div className="text-[10px] text-muted font-bold mt-3 pt-2.5 border-t border-surface-light">
                                 Aggregation Method: {widget.metadata.aggregation || "COUNT"}
                               </div>
                             )}
@@ -1102,28 +1102,28 @@ export default function Dashboard({
                         const displayName = parsedData.schema.find(c => c.columnName === colName)?.displayName || colName;
 
                         return (
-                          <div className="h-64 w-full text-[10px] mt-2">
+                          <div className="h-64 w-full text-[10px] mt-2 select-none">
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#121b2e" vertical={false} />
                                 <XAxis
                                   dataKey="date_bucket"
-                                  stroke="#6b7280"
+                                  stroke="#94a3b8"
                                   tickLine={false}
                                   axisLine={false}
                                   dy={8}
                                 />
                                 <YAxis
-                                  stroke="#6b7280"
+                                  stroke="#94a3b8"
                                   tickLine={false}
                                   axisLine={false}
                                   width={80}
                                   tickFormatter={(v) => formatNumber(v, isCurrency ? "currency" : "number", sym)}
                                 />
                                 <Tooltip
-                                  contentStyle={{ backgroundColor: "#111827", borderColor: "#374151", borderRadius: "8px" }}
-                                  itemStyle={{ color: "#f3f4f6" }}
-                                  labelStyle={{ color: "#9ca3af", fontWeight: "bold" }}
+                                  contentStyle={{ backgroundColor: "#0f172a", borderColor: "#121b2e", borderRadius: "12px" }}
+                                  itemStyle={{ color: "#f8fafc" }}
+                                  labelStyle={{ color: "#94a3b8", fontWeight: "bold" }}
                                   formatter={(value) => [formatNumber(value as number, isCurrency ? "currency" : "number", sym), displayName]}
                                 />
                                 <Legend verticalAlign="top" height={36} iconType="circle" />
@@ -1153,29 +1153,29 @@ export default function Dashboard({
                         const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
 
                         return (
-                          <div className="h-64 w-full text-[10px] mt-2">
+                          <div className="h-64 w-full text-[10px] mt-2 select-none">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#121b2e" vertical={false} />
                                 <XAxis
                                   dataKey="category"
-                                  stroke="#6b7280"
+                                  stroke="#94a3b8"
                                   tickLine={false}
                                   axisLine={false}
                                   dy={8}
                                   tickFormatter={(v) => (String(v).length > 12 ? `${String(v).slice(0, 10)}...` : String(v))}
                                 />
                                 <YAxis
-                                  stroke="#6b7280"
+                                  stroke="#94a3b8"
                                   tickLine={false}
                                   axisLine={false}
                                   width={80}
                                   tickFormatter={(v) => formatNumber(v, metricType, sym)}
                                 />
                                 <Tooltip
-                                  contentStyle={{ backgroundColor: "#111827", borderColor: "#374151", borderRadius: "8px" }}
-                                  itemStyle={{ color: "#f3f4f6" }}
-                                  labelStyle={{ color: "#9ca3af", fontWeight: "bold" }}
+                                  contentStyle={{ backgroundColor: "#0f172a", borderColor: "#121b2e", borderRadius: "12px" }}
+                                  itemStyle={{ color: "#f8fafc" }}
+                                  labelStyle={{ color: "#94a3b8", fontWeight: "bold" }}
                                   formatter={(value) => [formatNumber(value as number, metricType, sym), metricName]}
                                 />
                                 <Legend verticalAlign="top" height={36} iconType="circle" />
@@ -1201,12 +1201,12 @@ export default function Dashboard({
 
       {/* 💾 Save Dashboard Modal Dialog */}
       {showSaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in">
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative space-y-5 animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in backdrop-blur-sm">
+          <div className="bg-surface border border-surface-light rounded-2xl p-6 w-full max-w-md shadow-2xl relative space-y-5 animate-scale-up">
             <button
               onClick={() => setShowSaveModal(false)}
               disabled={saving}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white disabled:opacity-30 transition"
+              className="absolute top-4 right-4 text-muted hover:text-white disabled:opacity-30 transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded p-1"
             >
               <X className="h-4 w-4" />
             </button>
@@ -1214,25 +1214,25 @@ export default function Dashboard({
             {/* Success Confirmation Screen */}
             {saveSuccessId ? (
               <div className="text-center py-4 space-y-4">
-                <div className="h-12 w-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+                <div className="h-12 w-12 bg-success/10 border border-success/20 text-success rounded-full flex items-center justify-center mx-auto shadow-glow-secondary">
                   <CheckCircle2 className="h-6 w-6" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white">Dashboard Saved Successfully!</h3>
-                  <p className="text-xs text-gray-400 px-4 leading-relaxed">
+                  <h3 className="font-display text-base font-extrabold text-white">Dashboard Saved Successfully!</h3>
+                  <p className="text-xs text-muted px-4 leading-relaxed font-semibold">
                     Your layout and column definitions have been persisted under session ID cookie.
                   </p>
                 </div>
 
-                <div className="bg-gray-950 border border-gray-850 p-3.5 rounded-xl space-y-1 text-[11px] font-mono select-all">
-                  <span className="text-gray-500 block text-[9px] font-bold uppercase tracking-wider font-sans mb-1">Generated Dashboard ID</span>
-                  <span className="text-blue-400 font-bold block">{saveSuccessId}</span>
+                <div className="bg-background border border-surface-light p-3.5 rounded-xl space-y-1 text-[11px] font-mono select-all">
+                  <span className="text-muted/60 block text-[9px] font-bold uppercase tracking-wider font-sans mb-1">Generated Dashboard ID</span>
+                  <span className="text-secondary-light font-bold block">{saveSuccessId}</span>
                 </div>
 
                 <div className="pt-3">
                   <button
                     onClick={() => setShowSaveModal(false)}
-                    className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-bold transition"
+                    className="w-full py-2.5 bg-surface-light hover:bg-surface text-white rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                   >
                     Close Dialog
                   </button>
@@ -1240,27 +1240,27 @@ export default function Dashboard({
               </div>
             ) : (
               /* Name Form Screen */
-              <div className="space-y-4">
+              <div className="space-y-4 font-sans">
                 <div>
-                  <h3 className="text-base font-bold text-white">Save Dashboard to Database</h3>
-                  <p className="text-xs text-gray-400 mt-1">Provide a name to revisit your customized layout and schema later.</p>
+                  <h3 className="font-display text-base font-extrabold text-white">Save Dashboard to Database</h3>
+                  <p className="text-xs text-muted mt-1 font-semibold">Provide a name to revisit your customized layout and schema later.</p>
                 </div>
 
-                <div className="flex flex-col space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Dashboard Title</label>
+                <div className="flex flex-col space-y-1.5 text-xs">
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Dashboard Title</label>
                   <input
                     type="text"
                     value={saveTitle}
                     onChange={(e) => setSaveTitle(e.target.value)}
                     placeholder="Enter dashboard name"
                     disabled={saving}
-                    className="bg-gray-950 border border-gray-850 rounded-lg p-3 text-white outline-none focus:border-accent text-xs placeholder-gray-700 font-medium"
+                    className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary text-xs placeholder-muted/30 font-bold focus-visible:ring-2 focus-visible:ring-secondary/20"
                     maxLength={100}
                   />
                 </div>
 
                 {saveError && (
-                  <div className="flex items-start space-x-2 text-rose-400 p-3 bg-rose-950/20 border border-rose-900/30 rounded-lg text-xs font-mono">
+                  <div className="flex items-start space-x-2 text-rose-400 p-3 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs font-mono">
                     <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <span>{saveError}</span>
                   </div>
@@ -1271,7 +1271,7 @@ export default function Dashboard({
                     type="button"
                     disabled={saving}
                     onClick={() => setShowSaveModal(false)}
-                    className="px-4 py-2 bg-gray-950 border border-gray-850 hover:bg-gray-900 text-gray-400 hover:text-white rounded-lg text-xs font-bold transition"
+                    className="px-4 py-2.5 bg-background border border-surface-light hover:bg-surface-light text-muted hover:text-white rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                   >
                     Cancel
                   </button>
@@ -1279,7 +1279,7 @@ export default function Dashboard({
                     type="button"
                     disabled={saving}
                     onClick={handleSaveDashboard}
-                    className="flex items-center space-x-1.5 px-5 py-2 bg-accent hover:bg-blue-600 disabled:bg-gray-800 text-white rounded-lg text-xs font-bold transition shadow-md shadow-accent/15"
+                    className="flex items-center space-x-1.5 px-5 py-2.5 bg-accent hover:bg-accent-light disabled:bg-surface-light text-white rounded-xl text-xs font-extrabold transition-all duration-300 shadow-glow-accent hover:shadow-glow-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                   >
                     {saving ? (
                       <>

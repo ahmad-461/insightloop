@@ -330,10 +330,10 @@ export default function ChatPanel({
     if (isReadOnly) {
       return (
         <div
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-amber-500"
+          className="flex items-center space-x-1.5 px-3 py-1.5 bg-background border border-surface-light rounded-xl text-[10px] font-bold text-warning"
           title="Shared View — Conversation is local-only"
         >
-          <CloudOff className="h-3.5 w-3.5 text-amber-500" />
+          <CloudOff className="h-3.5 w-3.5 text-warning" />
           <span className="hidden sm:inline">Guest Mode (Local-Only)</span>
         </div>
       );
@@ -342,10 +342,10 @@ export default function ChatPanel({
     if (isSyncingHistory) {
       return (
         <div
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-blue-400"
+          className="flex items-center space-x-1.5 px-3 py-1.5 bg-background border border-surface-light rounded-xl text-[10px] font-bold text-accent-light"
           title="Syncing conversation to cloud..."
         >
-          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+          <RefreshCw className="h-3.5 w-3.5 animate-spin text-accent-light" />
           <span className="hidden sm:inline">Syncing...</span>
         </div>
       );
@@ -356,10 +356,10 @@ export default function ChatPanel({
     if (hasUnsynced) {
       return (
         <div
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-gray-500"
+          className="flex items-center space-x-1.5 px-3 py-1.5 bg-background border border-surface-light rounded-xl text-[10px] font-bold text-muted"
           title="Local-only (saves with dashboard)"
         >
-          <CloudOff className="h-3.5 w-3.5" />
+          <CloudOff className="h-3.5 w-3.5 text-muted" />
           <span className="hidden sm:inline">Local-only</span>
         </div>
       );
@@ -367,26 +367,26 @@ export default function ChatPanel({
 
     return (
       <div
-        className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-emerald-500"
+        className="flex items-center space-x-1.5 px-3 py-1.5 bg-background border border-surface-light rounded-xl text-[10px] font-bold text-success"
         title="Synced to cloud"
       >
-        <Cloud className="h-3.5 w-3.5" />
+        <Cloud className="h-3.5 w-3.5 text-success" />
         <span className="hidden sm:inline">Synced</span>
       </div>
     );
   };
 
   return (
-    <div className="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden flex flex-col shadow-xl">
+    <div className="bg-surface border border-surface-light rounded-2xl overflow-hidden flex flex-col shadow-xl font-sans">
       {/* Header bar */}
-      <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-surface/50">
+      <div className="px-6 py-4 border-b border-surface-light flex items-center justify-between bg-surface/50">
         <div className="flex items-center space-x-2.5 pr-4 truncate">
-          <div className="bg-blue-500/15 p-1.5 rounded-lg border border-blue-500/20 flex-shrink-0">
-            <Sparkles className="h-4 w-4 text-accent" />
+          <div className="bg-accent/10 p-2 rounded-xl border border-accent/20 flex-shrink-0 shadow-glow-accent">
+            <Sparkles className="h-4 w-4 text-accent-light" />
           </div>
           <div className="truncate">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Text-to-SQL Co-Pilot</h3>
-            <p className="text-[10px] text-gray-400 font-medium truncate">Ask questions about your loaded spreadsheet using conversational language.</p>
+            <h3 className="font-display text-sm font-extrabold text-white uppercase tracking-wider">AI Text-to-SQL Co-Pilot</h3>
+            <p className="text-[10px] text-muted font-bold truncate">Ask questions about your loaded spreadsheet using conversational language.</p>
           </div>
         </div>
 
@@ -395,7 +395,7 @@ export default function ChatPanel({
           {messages.length > 0 && (
             <button
               onClick={handleClearChat}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950 hover:bg-gray-900 text-gray-400 hover:text-white border border-gray-850 hover:border-gray-800 rounded-lg text-xs font-bold transition"
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-background hover:bg-surface-light text-muted hover:text-white border border-surface-light rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>Clear Session</span>
@@ -403,9 +403,9 @@ export default function ChatPanel({
           )}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 bg-gray-950 hover:bg-gray-900 border border-gray-850 text-gray-400 hover:text-white rounded-lg transition"
+            className="p-1.5 bg-background hover:bg-surface-light border border-surface-light text-muted hover:text-white rounded-xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
           >
-            {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            {isCollapsed ? <ChevronDown className="h-4 w-4 text-white" /> : <ChevronUp className="h-4 w-4 text-white" />}
           </button>
         </div>
       </div>
@@ -413,21 +413,21 @@ export default function ChatPanel({
       {!isCollapsed && (
         <div className="flex flex-col h-[500px]">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-background/20 select-text">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-background/10 select-text">
             {!datasetLoaded ? (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
-                <AlertCircle className="h-8 w-8 text-gray-600" />
-                <p className="text-xs text-gray-400 max-w-sm">
+                <AlertCircle className="h-8 w-8 text-muted/30" />
+                <p className="text-xs text-muted max-w-sm font-semibold leading-relaxed">
                   Please upload a spreadsheet first to activate the AI Co-Pilot query console.
                 </p>
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
-                <Bot className="h-10 w-10 text-accent/80" />
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                <Bot className="h-10 w-10 text-secondary-light animate-pulse" />
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-white">Ask anything about your data!</p>
-                  <p className="text-[11px] text-gray-400 max-w-xs">
-                    Try asking &quot;what is the total revenue?&quot; or &quot;which category is most popular?&quot;
+                  <p className="font-display text-sm font-bold text-white uppercase tracking-wider">Ask anything about your data!</p>
+                  <p className="text-xs text-muted max-w-xs mx-auto font-medium">
+                    Try asking &quot;what is our total sales value?&quot; or &quot;which product category is most active?&quot;
                   </p>
                 </div>
               </div>
@@ -444,10 +444,10 @@ export default function ChatPanel({
                     >
                       {/* Avatar */}
                       <div
-                        className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${
+                        className={`h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 border ${
                           isAi
-                            ? "bg-blue-950/45 border-blue-900/30 text-accent"
-                            : "bg-emerald-950/45 border-emerald-900/30 text-emerald-400"
+                            ? "bg-accent/10 border-accent/20 text-accent-light shadow-glow-accent"
+                            : "bg-success/10 border-success/20 text-success shadow-glow-secondary"
                         }`}
                       >
                         {isAi ? <Bot className="h-4.5 w-4.5" /> : <User className="h-4.5 w-4.5" />}
@@ -458,38 +458,38 @@ export default function ChatPanel({
                         <div
                           className={`rounded-2xl px-4 py-3 text-xs leading-relaxed ${
                             isAi
-                              ? "bg-surface border border-gray-800 text-gray-100"
-                              : "bg-accent text-white font-medium"
+                              ? "bg-surface-light/40 border border-surface-light/60 text-foreground"
+                              : "bg-accent text-white font-semibold shadow-glow-accent"
                           }`}
                         >
                           <p className="whitespace-pre-wrap">{msg.content}</p>
 
                           {/* Render Inline Recharts Chart if available */}
                           {isAi && msg.chartData && (
-                            <div className="mt-4 pt-3.5 border-t border-gray-800/80 space-y-2">
-                              <div className="flex items-center space-x-1.5 text-blue-400 font-bold text-[10px] uppercase tracking-wide">
+                            <div className="mt-4 pt-3.5 border-t border-surface-light space-y-2">
+                              <div className="flex items-center space-x-1.5 text-secondary-light font-extrabold text-[10px] uppercase tracking-wide">
                                 <ChartBar className="h-3.5 w-3.5" />
                                 <span>Suggested Visualization</span>
                               </div>
-                              <div className="h-44 w-full text-[9px] bg-background/50 border border-gray-850 p-2.5 rounded-lg">
+                              <div className="h-44 w-full text-[9px] bg-background/50 border border-surface-light p-2.5 rounded-xl">
                                 <ResponsiveContainer width="100%" height="100%">
                                   <BarChart data={msg.chartData.data}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#121b2e" vertical={false} />
                                     <XAxis
                                       dataKey={msg.chartData.xAxisKey}
-                                      stroke="#6b7280"
+                                      stroke="#94a3b8"
                                       tickLine={false}
                                       tickFormatter={(v) => (String(v).length > 10 ? `${String(v).slice(0, 8)}...` : String(v))}
                                     />
                                     <YAxis
-                                      stroke="#6b7280"
+                                      stroke="#94a3b8"
                                       tickLine={false}
-                                      width={60}
+                                      width={80}
                                       tickFormatter={(v) => formatNumber(v, "number")}
                                     />
                                     <Tooltip
-                                      contentStyle={{ backgroundColor: "#111827", borderColor: "#374151" }}
-                                      itemStyle={{ color: "#f3f4f6" }}
+                                      contentStyle={{ backgroundColor: "#0f172a", borderColor: "#121b2e" }}
+                                      itemStyle={{ color: "#f8fafc" }}
                                     />
                                     <Bar dataKey={msg.chartData.yAxisKey} fill="#3b82f6" radius={[3, 3, 0, 0]} />
                                   </BarChart>
@@ -504,14 +504,14 @@ export default function ChatPanel({
                           <div className="self-start">
                             <button
                               onClick={() => toggleSql(msg.id)}
-                              className="flex items-center space-x-1 text-[10px] text-gray-500 hover:text-white font-bold uppercase tracking-wider transition outline-none"
+                              className="flex items-center space-x-1 text-[10px] text-muted hover:text-white font-bold uppercase tracking-wider transition-colors outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded"
                             >
                               <span>{isExpanded ? "Hide query" : "Show query"}</span>
                               <ChevronDown className={`h-3.5 w-3.5 transform transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                             </button>
 
                             {isExpanded && (
-                              <div className="mt-1.5 bg-gray-950 border border-gray-850 rounded-lg p-3 max-w-full overflow-x-auto text-[11px] font-mono text-blue-400 leading-relaxed whitespace-pre-wrap select-all">
+                              <div className="mt-1.5 bg-background border border-surface-light rounded-xl p-3.5 max-w-full overflow-x-auto text-[11px] font-mono text-secondary-light leading-relaxed whitespace-pre-wrap select-all shadow-glow-secondary">
                                 {msg.sql}
                               </div>
                             )}
@@ -527,11 +527,11 @@ export default function ChatPanel({
             {/* Typing Indicator */}
             {isLoading && (
               <div className="flex items-start gap-3.5">
-                <div className="h-8 w-8 rounded-lg bg-blue-950/45 border border-blue-900/30 text-accent flex items-center justify-center flex-shrink-0 animate-pulse">
+                <div className="h-8 w-8 rounded-xl bg-accent/10 border border-accent/20 text-accent-light flex items-center justify-center flex-shrink-0 animate-pulse shadow-glow-accent">
                   <Bot className="h-4.5 w-4.5" />
                 </div>
-                <div className="bg-surface border border-gray-800 rounded-2xl px-4 py-3 flex items-center space-x-2 text-xs text-gray-400 font-bold shadow-md">
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-accent" />
+                <div className="bg-surface border border-surface-light rounded-2xl px-4 py-3 flex items-center space-x-2 text-xs text-muted font-bold shadow-md">
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-secondary-light" />
                   <span>AI Co-Pilot is writing SQL and analyzing results...</span>
                 </div>
               </div>
@@ -541,7 +541,7 @@ export default function ChatPanel({
           </div>
 
           {/* Form Action Input Area */}
-          <div className="p-4 border-t border-gray-800 bg-surface/50">
+          <div className="p-4 border-t border-surface-light bg-surface/50">
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <div className="relative flex-1">
                 <textarea
@@ -559,9 +559,9 @@ export default function ChatPanel({
                       ? "Ask a question about your data (e.g. 'what is the total value?')"
                       : "Upload a spreadsheet first to begin chatting..."
                   }
-                  className="w-full h-11 pl-4 pr-12 pt-3 bg-gray-950 border border-gray-850 hover:border-gray-800 focus:border-accent rounded-xl text-xs text-gray-100 placeholder-gray-600 outline-none transition focus:ring-1 focus:ring-accent/20 resize-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full h-11 pl-4 pr-12 pt-3.5 bg-background border border-surface-light hover:border-muted/30 focus:border-secondary rounded-xl text-xs text-foreground placeholder-muted/30 outline-none transition-all focus:ring-2 focus:ring-secondary/20 resize-none disabled:opacity-40 disabled:cursor-not-allowed"
                 />
-                <div className="absolute right-3.5 top-3.5 flex items-center space-x-1 text-[9px] font-bold text-gray-600 uppercase tracking-wide">
+                <div className="absolute right-3.5 top-3.5 flex items-center space-x-1 text-[9px] font-extrabold text-muted/50 uppercase tracking-wider">
                   <span>Enter</span>
                   <CornerDownLeft className="h-3 w-3" />
                 </div>
@@ -570,7 +570,7 @@ export default function ChatPanel({
               <button
                 type="submit"
                 disabled={!inputValue.trim() || !datasetLoaded || isLoading}
-                className="flex items-center justify-center h-11 w-11 bg-accent hover:bg-blue-600 disabled:bg-gray-800 text-white rounded-xl transition disabled:cursor-not-allowed flex-shrink-0 shadow-lg shadow-accent/15"
+                className="flex items-center justify-center h-11 w-11 bg-accent hover:bg-accent-light disabled:bg-surface-light/50 text-white rounded-xl transition-all duration-300 disabled:cursor-not-allowed flex-shrink-0 shadow-glow-accent focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
               >
                 <Send className="h-4 w-4" />
               </button>

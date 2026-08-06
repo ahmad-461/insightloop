@@ -340,7 +340,7 @@ export default function AdvancedInsights({
           cy={cy}
           r={6}
           fill="#ef4444"
-          stroke="#0f172a"
+          stroke="#080d1a"
           strokeWidth={2}
           className="animate-pulse"
         >
@@ -348,54 +348,54 @@ export default function AdvancedInsights({
         </circle>
       );
     }
-    return <circle cx={cx} cy={cy} r={3} fill="#3b82f6" />;
+    return <circle cx={cx} cy={cy} r={3.5} fill="#3b82f6" />;
   };
 
   return (
-    <div className="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden flex flex-col">
+    <div className="bg-surface border border-surface-light rounded-2xl overflow-hidden flex flex-col shadow-xl font-sans">
       {/* Panel Header (Click to collapse/expand) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-6 py-5 flex items-center justify-between hover:bg-gray-900/30 transition text-left w-full outline-none"
+        className="px-6 py-5 flex items-center justify-between hover:bg-surface-light/20 transition-all duration-300 text-left w-full outline-none focus-visible:bg-surface-light/10"
       >
         <div className="flex items-center space-x-3">
-          <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20">
-            <Brain className="h-5 w-5 text-blue-400" />
+          <div className="bg-accent/10 p-2 rounded-xl border border-accent/20 shadow-glow-accent">
+            <Brain className="h-5 w-5 text-accent-light" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h2 className="text-lg font-bold text-white">Advanced Insights (Python Statistical Layer)</h2>
+              <h2 className="font-display text-lg font-extrabold text-white">Advanced Insights (Python Statistical Layer)</h2>
               {!isOpen && (
-                <span className="text-[10px] bg-gray-900 border border-gray-800 text-gray-400 font-semibold px-2 py-0.5 rounded">
+                <span className="text-[10px] bg-background border border-surface-light text-muted font-bold px-2 py-0.5 rounded-lg">
                   Collapsed
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-muted mt-0.5 font-semibold">
               Leverage serverless Python (Pandas/Numpy) for advanced trend forecasting, outlier detection, and correlation.
             </p>
           </div>
         </div>
-        <div className="text-gray-400">
+        <div className="text-white">
           {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
         </div>
       </button>
 
       {/* Panel Body */}
       {isOpen && (
-        <div className="p-6 pt-0 border-t border-gray-800 space-y-6 animate-fade-in">
+        <div className="p-6 pt-0 border-t border-surface-light space-y-6 animate-fade-in">
           {/* Tabs header row */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4 pt-4">
-            <div className="flex space-x-1 bg-gray-950 p-1 rounded-lg border border-gray-850">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-light pb-4 pt-4">
+            <div className="flex space-x-1.5 bg-background p-1.5 rounded-xl border border-surface-light">
               {(["trend", "outlier", "correlation"] as const).map(tab => (
                 <button
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition ${
+                  className={`px-4.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none ${
                     activeTab === tab
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-400 hover:text-white hover:bg-gray-900"
+                      ? "bg-accent text-white shadow-glow-accent"
+                      : "text-muted hover:text-white hover:bg-surface-light"
                   }`}
                 >
                   {tab === "trend" ? "📈 Trend Forecast" : tab === "outlier" ? "🚨 Outlier Detection" : "📊 Correlation"}
@@ -406,25 +406,25 @@ export default function AdvancedInsights({
             <button
               onClick={() => runAnalysis(activeTab)}
               disabled={loading || !datasetLoaded}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 hover:border-gray-700 rounded-lg text-xs font-bold transition disabled:opacity-40"
+              className="flex items-center space-x-2 px-4.5 py-2 bg-background hover:bg-surface-light text-muted hover:text-white border border-surface-light rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
             >
-              {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-400" /> : <RefreshCw className="h-3.5 w-3.5 text-gray-400" />}
+              {loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin text-secondary-light" /> : <RefreshCw className="h-3.5 w-3.5 text-muted" />}
               <span>{loading ? "Calculating..." : "Run Analysis"}</span>
             </button>
           </div>
 
           {/* Configuration forms (Column Pickers) */}
           {activeTab === "trend" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-950 border border-gray-850 p-4 rounded-xl text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-background border border-surface-light p-4 rounded-2xl text-xs font-medium">
               <div className="flex flex-col space-y-1.5">
-                <label className="font-bold text-gray-400">Date/Time Dimension</label>
+                <label className="font-bold text-muted">Date/Time Dimension</label>
                 <select
                   value={trendDateCol}
                   onChange={(e) => {
                     setTrendDateCol(e.target.value);
                     setTrendResult(null);
                   }}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-2.5 text-white outline-none focus:border-blue-500 cursor-pointer text-xs"
+                  className="bg-surface border border-surface-light rounded-xl p-2.5 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                 >
                   {dateCols.length === 0 && <option value="">No date columns found</option>}
                   {dateCols.map(col => (
@@ -436,14 +436,14 @@ export default function AdvancedInsights({
               </div>
 
               <div className="flex flex-col space-y-1.5">
-                <label className="font-bold text-gray-400">Numeric/Currency Metric</label>
+                <label className="font-bold text-muted">Numeric/Currency Metric</label>
                 <select
                   value={trendMetricCol}
                   onChange={(e) => {
                     setTrendMetricCol(e.target.value);
                     setTrendResult(null);
                   }}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-2.5 text-white outline-none focus:border-blue-500 cursor-pointer text-xs"
+                  className="bg-surface border border-surface-light rounded-xl p-2.5 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                 >
                   {numCols.length === 0 && <option value="">No numeric columns found</option>}
                   {numCols.map(col => (
@@ -457,15 +457,15 @@ export default function AdvancedInsights({
           )}
 
           {activeTab === "outlier" && (
-            <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl text-xs flex flex-col space-y-1.5 max-w-md">
-              <label className="font-bold text-gray-400">Numeric/Currency Metric</label>
+            <div className="bg-background border border-surface-light p-4 rounded-2xl text-xs flex flex-col space-y-1.5 max-w-md font-medium">
+              <label className="font-bold text-muted">Numeric/Currency Metric</label>
               <select
                 value={outlierMetricCol}
                 onChange={(e) => {
                   setOutlierMetricCol(e.target.value);
                   setOutlierResult(null);
                 }}
-                className="bg-gray-900 border border-gray-800 rounded-lg p-2.5 text-white outline-none focus:border-blue-500 cursor-pointer text-xs"
+                className="bg-surface border border-surface-light rounded-xl p-2.5 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
               >
                 {numCols.length === 0 && <option value="">No numeric columns found</option>}
                 {numCols.map(col => (
@@ -480,10 +480,10 @@ export default function AdvancedInsights({
           {/* Loading Indicator */}
           {loading && (
             <div className="flex flex-col items-center justify-center space-y-3 py-16">
-              <RefreshCw className="h-8 w-8 text-blue-500 animate-spin" />
+              <RefreshCw className="h-8 w-8 text-[#3b82f6] animate-spin" />
               <div className="text-center space-y-1">
-                <p className="text-sm font-bold text-white">Transiting data to Serverless Python Model</p>
-                <p className="text-xs text-gray-400 max-w-xs mx-auto">This utilizes pandas + numpy to run statistics client-queried DuckDB subset. Fast & secure.</p>
+                <p className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Transiting data to Serverless Python Model</p>
+                <p className="text-xs text-muted max-w-xs mx-auto font-semibold">This utilizes pandas + numpy to run statistics client-queried DuckDB subset. Fast & secure.</p>
               </div>
             </div>
           )}
@@ -493,8 +493,8 @@ export default function AdvancedInsights({
             <div className="flex items-start space-x-3 p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl">
               <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-rose-400">Analysis Unavailable</p>
-                <p className="text-xs text-gray-300 leading-relaxed font-mono">{error}</p>
+                <p className="text-sm font-bold text-rose-400">Analysis Unavailable</p>
+                <p className="text-xs text-muted leading-relaxed font-mono font-medium">{error}</p>
               </div>
             </div>
           )}
@@ -504,62 +504,62 @@ export default function AdvancedInsights({
             <>
               {/* 1. Trend Forecast Render */}
               {activeTab === "trend" && trendResult && (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6 animate-fade-in font-sans">
                   {/* Metric highlights */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Trend Direction</span>
-                      <span className={`text-xl font-extrabold block capitalize ${
-                        trendResult.direction === "increasing" ? "text-emerald-400" : trendResult.direction === "decreasing" ? "text-rose-400" : "text-gray-400"
+                    <div className="bg-background border border-surface-light p-4 rounded-xl space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">Trend Direction</span>
+                      <span className={`text-xl font-extrabold block capitalize font-display ${
+                        trendResult.direction === "increasing" ? "text-success" : trendResult.direction === "decreasing" ? "text-rose-400" : "text-muted"
                       }`}>
                         {trendResult.direction === "increasing" ? "📈 Increasing" : trendResult.direction === "decreasing" ? "📉 Decreasing" : "➡️ Flat"}
                       </span>
                     </div>
 
-                    <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Linear Regression Slope</span>
+                    <div className="bg-background border border-surface-light p-4 rounded-xl space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">Linear Regression Slope</span>
                       <span className="text-xl font-extrabold text-white block font-mono">
                         {trendResult.slope.toFixed(4)}
                       </span>
                     </div>
 
-                    <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Next Period Forecast</span>
-                      <span className="text-xl font-extrabold text-blue-400 block font-mono">
+                    <div className="bg-background border border-surface-light p-4 rounded-xl space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">Next Period Forecast</span>
+                      <span className="text-xl font-extrabold text-accent-light block font-mono">
                         {formatNumber(trendResult.projection, getColType(trendMetricCol), getColCurrencySymbol(trendMetricCol))}
                       </span>
                     </div>
                   </div>
 
                   {/* Recharts trend Line Chart */}
-                  <div className="bg-gray-950 border border-gray-850 p-5 rounded-xl space-y-3">
+                  <div className="bg-background border border-surface-light p-5 rounded-xl space-y-3 shadow-glow-accent">
                     <div className="flex items-center space-x-2">
-                      <LineIcon className="h-4 w-4 text-blue-400" />
+                      <LineIcon className="h-4 w-4 text-accent-light" />
                       <span className="text-xs font-bold text-white uppercase tracking-wider">Actual vs Trend Line Regression Overlay</span>
                     </div>
 
-                    <div className="h-72 w-full text-[10px] pt-4">
+                    <div className="h-72 w-full text-[10px] pt-4 select-none">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={trendResult.points} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#121b2e" vertical={false} />
                           <XAxis
                             dataKey="date"
-                            stroke="#6b7280"
+                            stroke="#94a3b8"
                             tickLine={false}
                             axisLine={false}
                             dy={8}
                           />
                           <YAxis
-                            stroke="#6b7280"
+                            stroke="#94a3b8"
                             tickLine={false}
                             axisLine={false}
                             width={80}
                             tickFormatter={(v) => formatNumber(v, getColType(trendMetricCol), getColCurrencySymbol(trendMetricCol))}
                           />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#111827", borderColor: "#374151", borderRadius: "8px" }}
-                            itemStyle={{ color: "#f3f4f6" }}
-                            labelStyle={{ color: "#9ca3af", fontWeight: "bold" }}
+                            contentStyle={{ backgroundColor: "#0f172a", borderColor: "#121b2e", borderRadius: "12px" }}
+                            itemStyle={{ color: "#f8fafc" }}
+                            labelStyle={{ color: "#94a3b8", fontWeight: "bold" }}
                             formatter={(value, name) => [
                               formatNumber(value as number, getColType(trendMetricCol), getColCurrencySymbol(trendMetricCol)),
                               name === "actual" ? "Actual Value" : "Trend Overlay"
@@ -589,40 +589,40 @@ export default function AdvancedInsights({
                   </div>
 
                   {/* Verbal narrative paragraph */}
-                  <div className="p-4 bg-gray-950 border border-gray-850 rounded-xl text-xs leading-relaxed text-gray-300">
-                    <strong>Trend analysis summary:</strong> Based on the linear regression fitting of <strong>{trendResult.points.length} data points</strong>, the overall direction of <strong>{trendMetricCol}</strong> is <span className="font-semibold text-white">{trendResult.direction}</span> (slope rate of <code className="text-gray-200">{trendResult.slope.toFixed(4)}</code> per step). The project equation predicts the upcoming step value will land around <strong className="text-blue-400">{formatNumber(trendResult.projection, getColType(trendMetricCol), getColCurrencySymbol(trendMetricCol))}</strong>.
+                  <div className="p-4 bg-background border border-surface-light rounded-xl text-xs leading-relaxed text-muted font-medium">
+                    <strong className="text-white font-bold">Trend analysis summary:</strong> Based on the linear regression fitting of <strong className="text-white">{trendResult.points.length} data points</strong>, the overall direction of <span className="font-semibold text-white">{trendMetricCol}</span> is <span className="font-extrabold text-foreground">{trendResult.direction}</span> (slope rate of <code className="text-foreground">{trendResult.slope.toFixed(4)}</code> per step). The project equation predicts the upcoming step value will land around <strong className="text-accent-light font-bold">{formatNumber(trendResult.projection, getColType(trendMetricCol), getColCurrencySymbol(trendMetricCol))}</strong>.
                   </div>
                 </div>
               )}
 
               {/* 2. Outlier Detection Render */}
               {activeTab === "outlier" && outlierResult && (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6 animate-fade-in font-sans">
                   {/* Highlights */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider font-sans">Outliers Flagged</span>
-                      <span className={`text-xl font-extrabold block font-mono ${outlierResult.summary.outlier_count > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                    <div className="bg-background border border-surface-light p-4 rounded-xl space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-wider block font-sans">Outliers Flagged</span>
+                      <span className={`text-xl font-extrabold block font-mono ${outlierResult.summary.outlier_count > 0 ? "text-rose-400" : "text-success"}`}>
                         {outlierResult.summary.outlier_count} Point{outlierResult.summary.outlier_count === 1 ? "" : "s"}
                       </span>
                     </div>
 
-                    <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Calculated Lower Bound</span>
+                    <div className="bg-background border border-surface-light p-4 rounded-xl space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">Calculated Lower Bound</span>
                       <span className="text-xl font-extrabold text-white block font-mono">
                         {formatNumber(outlierResult.bounds.lower_bound, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}
                       </span>
                     </div>
 
-                    <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Calculated Upper Bound</span>
+                    <div className="bg-background border border-surface-light p-4 rounded-xl space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">Calculated Upper Bound</span>
                       <span className="text-xl font-extrabold text-white block font-mono">
                         {formatNumber(outlierResult.bounds.upper_bound, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}
                       </span>
                     </div>
 
-                    <div className="bg-gray-950 border border-gray-850 p-4 rounded-xl space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Interquartile Range (IQR)</span>
+                    <div className="bg-background border border-surface-light p-4 rounded-xl space-y-1">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-wider block">Interquartile Range (IQR)</span>
                       <span className="text-xl font-extrabold text-white block font-mono">
                         {formatNumber(outlierResult.bounds.iqr, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}
                       </span>
@@ -630,35 +630,35 @@ export default function AdvancedInsights({
                   </div>
 
                   {/* Recharts Scatter Highlight overlay Line Chart */}
-                  <div className="bg-gray-950 border border-gray-850 p-5 rounded-xl space-y-3">
+                  <div className="bg-background border border-surface-light p-5 rounded-xl space-y-3 shadow-glow-accent">
                     <div className="flex items-center space-x-2">
-                      <LineIcon className="h-4 w-4 text-blue-400" />
+                      <LineIcon className="h-4 w-4 text-accent-light" />
                       <span className="text-xs font-bold text-white uppercase tracking-wider">Outliers Highlighted in Red (Values Outside IQR Bounds)</span>
                     </div>
 
-                    <div className="h-72 w-full text-[10px] pt-4">
+                    <div className="h-72 w-full text-[10px] pt-4 select-none">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={outlierResult.points} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#121b2e" vertical={false} />
                           <XAxis
                             dataKey={outlierResult.labelColumn || undefined}
-                            stroke="#6b7280"
+                            stroke="#94a3b8"
                             tickLine={false}
                             axisLine={false}
                             dy={8}
                             tickFormatter={(v) => (v === undefined ? "" : String(v).length > 10 ? `${String(v).slice(0, 8)}...` : String(v))}
                           />
                           <YAxis
-                            stroke="#6b7280"
+                            stroke="#94a3b8"
                             tickLine={false}
                             axisLine={false}
                             width={80}
                             tickFormatter={(v) => formatNumber(v, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}
                           />
                           <Tooltip
-                            contentStyle={{ backgroundColor: "#111827", borderColor: "#374151", borderRadius: "8px" }}
-                            itemStyle={{ color: "#f3f4f6" }}
-                            labelStyle={{ color: "#9ca3af", fontWeight: "bold" }}
+                            contentStyle={{ backgroundColor: "#0f172a", borderColor: "#121b2e", borderRadius: "12px" }}
+                            itemStyle={{ color: "#f8fafc" }}
+                            labelStyle={{ color: "#94a3b8", fontWeight: "bold" }}
                             formatter={(value, name, item) => {
                               const isOutlier = item.payload.is_outlier;
                               return [
@@ -682,67 +682,67 @@ export default function AdvancedInsights({
                   </div>
 
                   {/* verbal narrative summary */}
-                  <div className="p-4 bg-gray-950 border border-gray-850 rounded-xl text-xs leading-relaxed text-gray-300">
-                    <strong>Outlier analysis summary:</strong> Out of <strong>{outlierResult.summary.total_points} total rows</strong>, standard 1.5x IQR boundary detection flagged <strong className="text-rose-400">{outlierResult.summary.outlier_count} point{outlierResult.summary.outlier_count === 1 ? "" : "s"}</strong> as statistical outliers. Quartile boundaries reside between <span className="text-white font-semibold">{formatNumber(outlierResult.bounds.lower_bound, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}</span> and <span className="text-white font-semibold">{formatNumber(outlierResult.bounds.upper_bound, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}</span>. Any value outside this threshold represents an extreme fluctuation worth auditing.
+                  <div className="p-4 bg-background border border-surface-light rounded-xl text-xs leading-relaxed text-muted font-medium">
+                    <strong className="text-white">Outlier analysis summary:</strong> Out of <strong className="text-white">{outlierResult.summary.total_points} total rows</strong>, standard 1.5x IQR boundary detection flagged <strong className="text-rose-400">{outlierResult.summary.outlier_count} point{outlierResult.summary.outlier_count === 1 ? "" : "s"}</strong> as statistical outliers. Quartile boundaries reside between <span className="text-foreground font-semibold">{formatNumber(outlierResult.bounds.lower_bound, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}</span> and <span className="text-foreground font-semibold">{formatNumber(outlierResult.bounds.upper_bound, getColType(outlierMetricCol), getColCurrencySymbol(outlierMetricCol))}</span>. Any value outside this threshold represents an extreme fluctuation worth auditing.
                   </div>
                 </div>
               )}
 
               {/* 3. Correlation matrix heatmap rendering */}
               {activeTab === "correlation" && correlationResult && (
-                <div className="space-y-6 animate-fade-in">
-                  <div className="bg-gray-950 border border-gray-850 p-5 rounded-xl space-y-4">
-                    <div className="flex items-center space-x-2 border-b border-gray-850 pb-3">
-                      <TableProperties className="h-4 w-4 text-blue-400" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">Pairwise Correlation Heatmap Matrix</span>
+                <div className="space-y-6 animate-fade-in font-sans">
+                  <div className="bg-background border border-surface-light p-5 rounded-2xl space-y-4 shadow-glow-accent">
+                    <div className="flex items-center space-x-2 border-b border-surface-light/40 pb-3">
+                      <TableProperties className="h-4 w-4 text-accent-light" />
+                      <span className="font-display text-xs font-bold text-white uppercase tracking-wider">Pairwise Correlation Heatmap Matrix</span>
                     </div>
 
-                    <div className="overflow-x-auto w-full">
-                      <table className="w-full text-left border-collapse table-fixed text-[11px] font-semibold text-gray-300">
+                    <div className="overflow-x-auto w-full select-none">
+                      <table className="w-full text-left border-collapse table-fixed text-[11px] font-bold text-muted">
                         <thead>
-                          <tr className="border-b border-gray-800">
-                            <th className="p-3 bg-gray-900 border-r border-gray-850 text-gray-400 w-32 font-bold truncate">Column</th>
+                          <tr className="border-b border-surface-light">
+                            <th className="p-3 bg-surface-light/40 border-r border-surface-light text-muted w-32 font-bold truncate">Column</th>
                             {Object.keys(correlationResult.matrix).map(col => (
-                              <th key={col} className="p-3 bg-gray-900 border-r border-gray-850 text-center font-bold truncate" title={col}>
+                              <th key={col} className="p-3 bg-surface-light/40 border-r border-surface-light text-center font-bold truncate" title={col}>
                                 {col}
                               </th>
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-850">
+                        <tbody className="divide-y divide-surface-light">
                           {Object.keys(correlationResult.matrix).map(rowCol => (
-                            <tr key={rowCol} className="hover:bg-gray-900/10">
-                              <td className="p-3 bg-gray-900 border-r border-gray-850 font-bold truncate text-gray-400" title={rowCol}>
+                            <tr key={rowCol} className="hover:bg-surface-light/10">
+                              <td className="p-3 bg-surface-light/40 border-r border-surface-light font-bold truncate text-muted" title={rowCol}>
                                 {rowCol}
                               </td>
                               {Object.keys(correlationResult.matrix).map(colCol => {
                                 const score = correlationResult.matrix[rowCol][colCol];
 
                                 // Color shading helper logic based on Pearson score (-1.0 to 1.0)
-                                let bgClass = "bg-gray-950";
-                                let textClass = "text-gray-400";
+                                let bgClass = "bg-background";
+                                let textClass = "text-muted";
 
                                 if (score >= 0.7) {
-                                  bgClass = "bg-emerald-950/70 border border-emerald-900/60";
-                                  textClass = "text-emerald-400 font-bold";
+                                  bgClass = "bg-success/20 border border-success/30 shadow-glow-secondary";
+                                  textClass = "text-success font-extrabold";
                                 } else if (score >= 0.4) {
-                                  bgClass = "bg-emerald-950/30 border border-emerald-950/20";
-                                  textClass = "text-emerald-300";
+                                  bgClass = "bg-success/5 border border-success/15";
+                                  textClass = "text-success/90";
                                 } else if (score <= -0.7) {
-                                  bgClass = "bg-rose-950/70 border border-rose-900/60";
-                                  textClass = "text-rose-400 font-bold";
+                                  bgClass = "bg-rose-500/10 border border-rose-500/20";
+                                  textClass = "text-rose-400 font-extrabold";
                                 } else if (score <= -0.4) {
-                                  bgClass = "bg-rose-950/30 border border-rose-950/20";
+                                  bgClass = "bg-rose-500/5 border border-rose-500/15";
                                   textClass = "text-rose-300";
                                 } else if (score > 0) {
-                                  bgClass = "bg-gray-900/30";
-                                  textClass = "text-gray-300";
+                                  bgClass = "bg-surface/30";
+                                  textClass = "text-foreground";
                                 }
 
                                 return (
                                   <td
                                     key={colCol}
-                                    className={`p-3 border-r border-gray-850 text-center font-mono text-xs ${bgClass} ${textClass}`}
+                                    className={`p-3 border-r border-surface-light last:border-r-0 text-center font-mono text-xs ${bgClass} ${textClass}`}
                                   >
                                     {score.toFixed(3)}
                                   </td>
@@ -756,8 +756,8 @@ export default function AdvancedInsights({
                   </div>
 
                   {/* verbal narrative summary */}
-                  <div className="p-4 bg-gray-950 border border-gray-850 rounded-xl text-xs leading-relaxed text-gray-300">
-                    <strong>Correlation analysis narrative:</strong> {correlationResult.plain_summary}
+                  <div className="p-4 bg-background border border-surface-light rounded-xl text-xs leading-relaxed text-muted font-medium">
+                    <strong className="text-white font-bold">Correlation analysis narrative:</strong> {correlationResult.plain_summary}
                   </div>
                 </div>
               )}
@@ -766,10 +766,10 @@ export default function AdvancedInsights({
 
           {/* Graceful empty layout guidance */}
           {!loading && !error && !trendResult && !outlierResult && !correlationResult && (
-            <div className="text-center py-12 bg-gray-950 border border-gray-850 rounded-xl space-y-3">
-              <Binary className="h-8 w-8 text-gray-600 mx-auto" />
-              <h4 className="text-sm font-bold text-white uppercase tracking-wider">Click &quot;Run Analysis&quot; to begin</h4>
-              <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
+            <div className="text-center py-12 bg-background border border-surface-light rounded-2xl space-y-3 shadow-inner">
+              <Binary className="h-8 w-8 text-muted/30 mx-auto animate-pulse" />
+              <h4 className="font-display text-sm font-bold text-white uppercase tracking-wider">Click &quot;Run Analysis&quot; to begin</h4>
+              <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed font-semibold">
                 Choose parameters above and run calculations to see live statistical results powered by Pandas on serverless compute.
               </p>
             </div>
