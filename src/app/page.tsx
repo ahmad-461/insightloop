@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useTransition, useEffect } from "react";
+import React, { useState, useRef, useTransition, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Upload,
   FileSpreadsheet,
@@ -21,7 +22,8 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  LayoutDashboard
+  LayoutDashboard,
+  XCircle
 } from "lucide-react";
 import {
   parseCSV,
@@ -35,15 +37,24 @@ import { useDuckDB } from "@/context/DuckDBContext";
 import Dashboard from "@/components/Dashboard";
 import ChatPanel from "@/components/ChatPanel";
 import AdvancedInsights from "@/components/AdvancedInsights";
+import { supabase } from "@/utils/supabaseClient";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const reactivateId = searchParams ? searchParams.get("reactivate") : null;
+
   const [parsedData, setParsedData] = useState<ParsedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reactivation flow states
+  const [targetDashboard, setTargetDashboard] = useState<{ title: string | null; dataset_summary: unknown } | null>(null);
+  const [reactivateWarning, setReactivateWarning] = useState<string | null>(null);
 
   // DuckDB Integration State
   const { loading: dbLoading, error: dbError, datasetLoaded, loadDataset, runQuery } = useDuckDB();
@@ -65,7 +76,34 @@ export default function Home() {
     setIsPreviewCollapsed(true);
   };
 
-  // Automatic DuckDB Load / Re-creation sync effect
+  // Fetch target dashboard schema summary for reactivation matching
+  useEffect(() => {
+    if (!reactivateId) {
+      setTargetDashboard(null);
+      return;
+    }
+
+    const fetchTargetSummary = async () => {
+      try {
+        const { data, error: sbError } = await supabase
+          .from("dashboards")
+          .select("title, dataset_summary")
+          .eq("id", reactivateId)
+          .single();
+
+        if (sbError) throw sbError;
+        if (data) {
+          setTargetDashboard(data);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard summary for reactivation:", err);
+      }
+    };
+
+    fetchTargetSummary();
+  }, [reactivateId]);
+
+  // Automatic DuckDB Load / Re-creation sync effect for standard flow
   useEffect(() => {
     if (parsedData) {
       setSyncStatus({ loading: true, error: null });
@@ -77,11 +115,59 @@ export default function Home() {
         }
       });
     }
-  }, [parsedData, loadDataset]); // Automatically re-triggers when overrides update parsedData schema or loadDataset is changed
+  }, [parsedData, loadDataset]);
+
+  // Schema matching checker
+  const matchSchemas = (savedSummary: unknown, uploadedSchema: ColumnSchema[]): boolean => {
+    if (!savedSummary) return false;
+
+    // Resolve schema array
+    let savedSchema: ColumnSchema[] = [];
+    if (typeof savedSummary === "object" && !Array.isArray(savedSummary) && "schema" in savedSummary) {
+      savedSchema = Array.isArray((savedSummary as { schema: unknown }).schema) ? ((savedSummary as { schema: ColumnSchema[] }).schema) : [];
+    } else if (Array.isArray(savedSummary)) {
+      savedSchema = savedSummary as ColumnSchema[];
+    } else {
+      return false;
+    }
+
+    if (savedSchema.length === 0) return false;
+
+    // Compatibility rule: same type, or text/category compatible, or number/currency compatible
+    const isCompatible = (t1: string, t2: string) => {
+      if (t1 === t2) return true;
+      if ((t1 === "text" || t1 === "category") && (t2 === "text" || t2 === "category")) return true;
+      if ((t1 === "number" || t1 === "currency") && (t2 === "number" || t2 === "currency")) return true;
+      return false;
+    };
+
+    // All columns from savedSchema must exist in uploadedSchema (match by sqlSafeName) with compatible types
+    for (const savedCol of savedSchema) {
+      const uploadedCol = uploadedSchema.find((u) => u.sqlSafeName === savedCol.sqlSafeName);
+      if (!uploadedCol) {
+        console.warn("Schema match failed: missing column", savedCol.sqlSafeName);
+        return false;
+      }
+      if (!isCompatible(savedCol.currentType, uploadedCol.currentType)) {
+        console.warn(
+          "Schema match failed: incompatible type for column",
+          savedCol.sqlSafeName,
+          "saved:",
+          savedCol.currentType,
+          "uploaded:",
+          uploadedCol.currentType
+        );
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   // Handle parsing a selected File
   const handleFileProcess = (file: File) => {
     setError(null);
+    setReactivateWarning(null);
     setQueryResults(null);
     setQueryError(null);
 
@@ -108,6 +194,66 @@ export default function Home() {
         } else {
           result = await parseExcel(file);
         }
+
+        // Reactivation schema matching check
+        if (reactivateId && targetDashboard) {
+          const matches = matchSchemas(targetDashboard.dataset_summary, result.schema);
+          if (matches) {
+            // Align column currentTypes to match saved dashboard overrides exactly
+            let savedCols: ColumnSchema[] = [];
+            const summary = targetDashboard.dataset_summary;
+            if (
+              summary &&
+              typeof summary === "object" &&
+              !Array.isArray(summary) &&
+              "schema" in (summary as Record<string, unknown>)
+            ) {
+              savedCols = (summary as { schema: ColumnSchema[] }).schema;
+            } else if (Array.isArray(summary)) {
+              savedCols = summary as ColumnSchema[];
+            }
+
+            const alignedSchema = result.schema.map((uploadedCol) => {
+              const matchedSavedCol = savedCols.find((s) => s.sqlSafeName === uploadedCol.sqlSafeName);
+              if (matchedSavedCol) {
+                return {
+                  ...uploadedCol,
+                  currentType: matchedSavedCol.currentType,
+                };
+              }
+              return uploadedCol;
+            });
+
+            const alignedResult = {
+              ...result,
+              schema: alignedSchema,
+            };
+
+            // Sync database right away
+            setSyncStatus({ loading: true, error: null });
+            const loadRes = await loadDataset(alignedResult);
+            if (!loadRes.success) {
+              throw new Error(loadRes.error || "Failed to load reactivated database.");
+            }
+            setSyncStatus({ loading: false, error: null });
+
+            // Store stripped result in sessionStorage for page revisit retrieval
+            const strippedResult = {
+              ...alignedResult,
+              rawRows: [], // omit raw rows to save storage space
+            };
+            sessionStorage.setItem(`insightloop_reactivated_parsed_data_${reactivateId}`, JSON.stringify(strippedResult));
+
+            // Clean up query param from URL and redirect
+            router.push(`/dashboards/${reactivateId}`);
+            return;
+          } else {
+            setReactivateWarning(
+              `The uploaded file's schema does not match the saved dashboard. Reverting to normal auto-generation.`
+            );
+          }
+        }
+
         setParsedData(result);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "An unexpected error occurred while parsing.";
@@ -150,6 +296,7 @@ export default function Home() {
   const handleClear = () => {
     setParsedData(null);
     setError(null);
+    setReactivateWarning(null);
     setQueryResults(null);
     setQueryError(null);
     setSqlQuery("SELECT * FROM dataset LIMIT 10");
@@ -284,6 +431,38 @@ export default function Home() {
           </button>
         )}
       </div>
+
+      {/* REACTIVATION INFO BOX */}
+      {reactivateId && targetDashboard && !parsedData && (
+        <div className="bg-blue-950/25 border border-blue-900/30 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-3xl mx-auto animate-fade-in">
+          <div className="flex items-start space-x-3">
+            <RefreshCw className="h-5 w-5 text-accent mt-0.5 animate-spin flex-shrink-0" />
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-white">Reactivating Saved Dashboard</h4>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Please upload the original spreadsheet for &quot;<strong className="text-gray-300">{targetDashboard.title}</strong>&quot; to restore interactive views and chats.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.replace("/")}
+            className="text-xs text-gray-400 hover:text-white transition font-medium underline shrink-0"
+          >
+            Cancel Reactivation
+          </button>
+        </div>
+      )}
+
+      {/* REACTIVATION WARNING MODAL / TOAST */}
+      {reactivateWarning && (
+        <div className="bg-amber-950/20 border border-amber-900/30 p-4 rounded-xl flex items-start space-x-3 max-w-3xl mx-auto animate-fade-in text-amber-400">
+          <XCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-white">Schema Mismatch Detected</p>
+            <p className="text-xs text-gray-400 leading-relaxed">{reactivateWarning}</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Upload Area (when no file is successfully parsed) */}
       {!parsedData && (
@@ -770,5 +949,21 @@ export default function Home() {
       )}
 
     </div>
+  );
+}
+
+// Suspense Boundary Wrapper to prevent static de-optimization build errors
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-20">
+          <RefreshCw className="h-8 w-8 text-accent animate-spin" />
+          <span className="text-sm text-gray-400 font-medium">Initializing workspace co-pilot...</span>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
