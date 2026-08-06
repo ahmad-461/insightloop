@@ -543,6 +543,12 @@ export default function Dashboard({
         throw new Error("Supabase connection parameters are not fully set in the workspace. Please make sure variables are configured.");
       }
 
+      // Structured dataset summary
+      const datasetSummaryPayload = {
+        totalRows: parsedData.rawRows.length,
+        schema: parsedData.schema
+      };
+
       let resData;
       if (dashboardId) {
         // Update existing dashboard
@@ -551,7 +557,7 @@ export default function Dashboard({
           .update({
             title: titleToSave,
             layout_config: widgets,
-            dataset_summary: parsedData.schema
+            dataset_summary: datasetSummaryPayload
           })
           .eq("id", dashboardId)
           .select();
@@ -569,7 +575,7 @@ export default function Dashboard({
               session_id: sessionId,
               title: titleToSave,
               layout_config: widgets,
-              dataset_summary: parsedData.schema
+              dataset_summary: datasetSummaryPayload
             }
           ])
           .select();

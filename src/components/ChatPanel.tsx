@@ -49,14 +49,30 @@ interface ChatPanelProps {
   schema: ColumnSchema[];
   runQuery: (sql: string) => Promise<Record<string, unknown>[] | { error: string }>;
   dashboardId: string | null;
+  initialMessages?: ChatMessage[];
+  isReadOnly?: boolean;
 }
 
-export default function ChatPanel({ datasetLoaded, schema, runQuery, dashboardId }: ChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function ChatPanel({
+  datasetLoaded,
+  schema,
+  runQuery,
+  dashboardId,
+  initialMessages = [],
+  isReadOnly = false
+}: ChatPanelProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedSqlIds, setExpandedSqlIds] = useState<Record<string, boolean>>({});
+
+  // Update messages state when initialMessages loads
+  useEffect(() => {
+    if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages);
+    }
+  }, [initialMessages]);
 
   // Phase 7: Tracking background syncing states to Supabase
   const [isSyncingHistory, setIsSyncingHistory] = useState(false);
@@ -83,7 +99,7 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery, dashboardId
 
   // Phase 7 Centralized Sync effect
   useEffect(() => {
-    if (!dashboardId || isSyncingHistory) return;
+    if (!dashboardId || isSyncingHistory || isReadOnly) return;
 
     // Find all unsynced messages that haven't failed syncing already
     const unsynced = messages.filter((m) => !m.synced && !failedSyncIds.includes(m.id));
@@ -129,7 +145,7 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery, dashboardId
     };
 
     doSync();
-  }, [dashboardId, messages, isSyncingHistory, failedSyncIds]);
+  }, [dashboardId, messages, isSyncingHistory, failedSyncIds, isReadOnly]);
 
   // Helper to determine if results can be charted (exactly two columns, one of which is numeric)
   const detectChartableData = (rows: Record<string, unknown>[]): ChatMessage["chartData"] | undefined => {
@@ -310,6 +326,18 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery, dashboardId
   // Sync Status Indicator Helper Component
   const renderSyncIndicator = () => {
     if (messages.length === 0) return null;
+
+    if (isReadOnly) {
+      return (
+        <div
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-amber-500"
+          title="Shared View — Conversation is local-only"
+        >
+          <CloudOff className="h-3.5 w-3.5 text-amber-500" />
+          <span className="hidden sm:inline">Guest Mode (Local-Only)</span>
+        </div>
+      );
+    }
 
     if (isSyncingHistory) {
       return (
