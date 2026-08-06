@@ -8,7 +8,8 @@ import {
   ExternalLink,
   Plus,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react";
 import { getOrCreateSessionId } from "@/utils/session";
 import { supabase } from "@/utils/supabaseClient";
@@ -128,20 +129,20 @@ export default function MyDashboardsPage() {
   };
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 space-y-8 font-sans">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-light pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-foreground to-muted bg-clip-text text-transparent">
             My Saved Dashboards
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-muted text-sm mt-1 font-semibold">
             Access, revisit, and manage your previously saved AI analytics layouts.
           </p>
         </div>
         <Link
           href="/"
-          className="flex items-center space-x-2 px-4 py-2 bg-accent hover:bg-blue-600 text-white rounded-lg text-sm transition font-medium self-start md:self-auto"
+          className="flex items-center space-x-2 px-5 py-2.5 bg-accent hover:bg-accent-light text-white font-extrabold rounded-xl text-sm transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-glow-accent hover:shadow-glow-secondary self-start md:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span>Upload & Create New</span>
@@ -152,12 +153,12 @@ export default function MyDashboardsPage() {
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, idx) => (
-            <div key={idx} className="bg-[#111827] border border-gray-800 rounded-xl p-6 space-y-4 animate-pulse">
-              <div className="h-5 bg-gray-800 rounded w-2/3"></div>
-              <div className="h-4 bg-gray-800 rounded w-1/2"></div>
-              <div className="pt-4 border-t border-gray-850 flex justify-between">
-                <div className="h-4 bg-gray-800 rounded w-1/4"></div>
-                <div className="h-4 bg-gray-800 rounded w-1/4"></div>
+            <div key={idx} className="bg-surface border border-surface-light rounded-2xl p-6 space-y-4 animate-pulse">
+              <div className="h-5 bg-surface-light rounded-lg w-2/3"></div>
+              <div className="h-4 bg-surface-light rounded-lg w-1/2"></div>
+              <div className="pt-4 border-t border-surface-light/40 flex justify-between">
+                <div className="h-4 bg-surface-light rounded-lg w-1/4"></div>
+                <div className="h-4 bg-surface-light rounded-lg w-1/4"></div>
               </div>
             </div>
           ))}
@@ -166,31 +167,31 @@ export default function MyDashboardsPage() {
 
       {/* Error state */}
       {!loading && error && (
-        <div className="flex items-start space-x-3 p-5 bg-rose-950/20 border border-rose-900/30 rounded-xl">
+        <div className="flex items-start space-x-3 p-5 bg-rose-950/20 border border-rose-900/30 rounded-2xl">
           <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-rose-400">Failed to Load Saved Dashboards</p>
-            <p className="text-xs text-gray-300 leading-relaxed font-mono">{error}</p>
+            <p className="text-sm font-bold text-rose-400">Failed to Load Saved Dashboards</p>
+            <p className="text-xs text-muted leading-relaxed font-mono font-medium">{error}</p>
           </div>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && !error && dashboards.length === 0 && (
-        <div className="text-center py-20 px-6 bg-[#111827] border border-gray-800 rounded-2xl max-w-xl mx-auto space-y-5">
-          <div className="h-14 w-14 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center mx-auto text-gray-400">
-            <LayoutDashboard className="h-7 w-7" />
+        <div className="text-center py-20 px-6 bg-surface border border-surface-light rounded-2xl max-w-xl mx-auto space-y-5 shadow-glow-accent">
+          <div className="h-14 w-14 rounded-2xl bg-surface-light/40 border border-surface-light flex items-center justify-center mx-auto text-muted shadow-inner">
+            <LayoutDashboard className="h-7 w-7 text-accent-light" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-bold text-white">No saved dashboards yet</h3>
-            <p className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
+            <h3 className="font-display text-lg font-bold text-white uppercase tracking-wider">No saved dashboards yet</h3>
+            <p className="text-sm text-muted max-w-md mx-auto leading-relaxed font-semibold">
               Start by uploading your CSV/Excel files and building visualizations. Once you are satisfied, click &quot;Save Dashboard&quot; to list them here!
             </p>
           </div>
           <div className="pt-2">
             <Link
               href="/"
-              className="inline-flex items-center space-x-2 px-5 py-2.5 bg-accent hover:bg-blue-600 text-white font-bold rounded-lg text-sm transition shadow-lg shadow-accent/15"
+              className="inline-flex items-center space-x-2 px-5.5 py-3 bg-accent hover:bg-accent-light text-white font-extrabold rounded-xl text-sm transition-all duration-300 shadow-glow-accent hover:shadow-glow-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
             >
               <FileSpreadsheet className="h-4 w-4" />
               <span>Get Started Now</span>
@@ -209,38 +210,38 @@ export default function MyDashboardsPage() {
               <Link
                 href={`/dashboards/${dash.id}`}
                 key={dash.id}
-                className="group bg-[#111827] border border-gray-800 hover:border-gray-700 rounded-xl p-6 transition flex flex-col justify-between shadow-lg relative overflow-hidden"
+                className="group bg-surface border border-surface-light hover:border-accent-light/40 rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between shadow-xl relative overflow-hidden hover:shadow-glow-accent focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
               >
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-bold text-lg text-white leading-snug group-hover:text-accent transition truncate max-w-[85%]" title={dash.title || "Untitled Dashboard"}>
+                    <h3 className="font-display font-extrabold text-lg text-white leading-snug group-hover:text-accent-light transition-colors truncate max-w-[85%]" title={dash.title || "Untitled Dashboard"}>
                       {dash.title || "Untitled Dashboard"}
                     </h3>
-                    <div className="text-gray-500 group-hover:text-accent transition">
+                    <div className="text-muted group-hover:text-accent-light transition-colors">
                       <ExternalLink className="h-4.5 w-4.5" />
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-400 font-medium">
+                  <p className="text-xs text-muted font-bold">
                     Saved {formatRelativeDate(dash.created_at)}
                   </p>
 
                   <div className="flex flex-wrap gap-2 pt-2">
-                    <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-gray-950 border border-gray-850 text-xs font-semibold text-gray-300">
-                      <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-background border border-surface-light text-xs font-bold text-foreground font-sans">
+                      <FileSpreadsheet className="h-3.5 w-3.5 text-success" />
                       <span>{columnsCount} Columns</span>
                     </span>
-                    <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-gray-950 border border-gray-850 text-xs font-semibold text-gray-300">
+                    <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-background border border-surface-light text-xs font-bold text-foreground font-sans">
                       <span>{rowsCount.toLocaleString()} Rows</span>
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-gray-850 mt-6 flex justify-between items-center text-xs">
-                  <span className="text-[10px] text-gray-500 font-mono select-all">ID: {dash.id.slice(0, 8)}...</span>
+                <div className="pt-6 border-t border-surface-light/60 mt-6 flex justify-between items-center text-xs">
+                  <span className="text-[10px] text-muted/60 font-mono select-all">ID: {dash.id.slice(0, 8)}...</span>
                   <button
                     onClick={(e) => handleDeleteClick(dash.id, e)}
-                    className="flex items-center space-x-1 px-2.5 py-1.5 bg-rose-950/20 hover:bg-rose-900/30 text-rose-400 border border-rose-900/30 hover:border-rose-900/50 rounded-lg font-semibold transition"
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-rose-950/20 hover:bg-rose-900/40 text-rose-400 border border-rose-900/30 hover:border-rose-900/50 rounded-xl font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span>Delete</span>
@@ -254,15 +255,21 @@ export default function MyDashboardsPage() {
 
       {/* Confirmation Modal */}
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in">
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-5 animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in backdrop-blur-sm">
+          <div className="bg-surface border border-surface-light rounded-2xl p-6 w-full max-sm:max-w-sm max-w-md shadow-2xl space-y-5 animate-scale-up relative">
+            <button
+              onClick={() => setDeleteId(null)}
+              className="absolute top-4 right-4 text-muted hover:text-white transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded p-1"
+            >
+              <X className="h-4 w-4" />
+            </button>
             <div className="text-center py-2 space-y-4">
-              <div className="h-12 w-12 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto">
+              <div className="h-12 w-12 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-full flex items-center justify-center mx-auto shadow-glow-secondary animate-pulse">
                 <Trash2 className="h-6 w-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-white">Delete Saved Dashboard?</h3>
-                <p className="text-xs text-gray-400 px-2 leading-relaxed">
+                <h3 className="font-display text-base font-extrabold text-white">Delete Saved Dashboard?</h3>
+                <p className="text-xs text-muted px-2 leading-relaxed font-semibold">
                   Are you absolutely sure you want to delete this dashboard? This action cannot be undone, and all associated chat history will be permanently deleted.
                 </p>
               </div>
@@ -272,14 +279,14 @@ export default function MyDashboardsPage() {
               <button
                 disabled={deleting}
                 onClick={() => setDeleteId(null)}
-                className="flex-1 py-2 bg-gray-950 hover:bg-gray-900 border border-gray-850 text-gray-400 hover:text-white rounded-lg text-xs font-bold transition"
+                className="flex-1 py-2.5 bg-background hover:bg-surface-light border border-surface-light text-muted hover:text-white rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
               >
                 Cancel
               </button>
               <button
                 disabled={deleting}
                 onClick={confirmDelete}
-                className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 disabled:bg-gray-850 text-white rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5"
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:bg-surface-light text-white rounded-xl text-xs font-extrabold transition-all duration-300 flex items-center justify-center space-x-1.5 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-glow-accent"
               >
                 {deleting ? (
                   <>

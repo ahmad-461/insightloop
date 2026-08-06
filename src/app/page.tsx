@@ -23,7 +23,8 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
-  XCircle
+  XCircle,
+  Sparkles
 } from "lucide-react";
 import {
   parseCSV,
@@ -38,8 +39,175 @@ import Dashboard from "@/components/Dashboard";
 import ChatPanel from "@/components/ChatPanel";
 import AdvancedInsights from "@/components/AdvancedInsights";
 import { supabase } from "@/utils/supabaseClient";
+import Link from "next/link";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+function MiniDashboardPreview({ reducedMotion }: { reducedMotion: boolean }) {
+  const [count, setCount] = useState(0);
+  const [chatStep, setChatStep] = useState(0);
+
+  // KPI counter logic
+  useEffect(() => {
+    if (reducedMotion) {
+      setCount(48250);
+      return;
+    }
+    const duration = 1500;
+    const start = 0;
+    const end = 48250;
+    const stepTime = 25;
+    const totalSteps = duration / stepTime;
+    const increment = end / totalSteps;
+    let current = start;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, stepTime);
+
+    return () => clearInterval(timer);
+  }, [reducedMotion]);
+
+  // Chat conversation sequence loop
+  useEffect(() => {
+    if (reducedMotion) {
+      setChatStep(3); // immediately show complete conversation
+      return;
+    }
+    const interval = setInterval(() => {
+      setChatStep((prev) => (prev + 1) % 4);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [reducedMotion]);
+
+  return (
+    <div className="relative w-full max-w-lg bg-surface/60 border border-surface-light/80 rounded-2xl shadow-glow-accent overflow-hidden backdrop-blur-sm select-none">
+      {/* OS Titlebar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-light/40 border-b border-surface/80">
+        <div className="flex items-center space-x-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-rose-500/70" />
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
+        </div>
+        <span className="text-[10px] font-display font-bold tracking-wider text-muted uppercase">
+          InsightLoop AI Sandbox
+        </span>
+        <div className="w-10" />
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* KPI Row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-surface-light/35 border border-surface-light/50 p-3 rounded-xl">
+            <span className="text-[9px] uppercase font-extrabold text-muted block tracking-wider">Active Deals</span>
+            <span className="text-lg font-extrabold text-white mt-1 block">142</span>
+          </div>
+          <div className="bg-surface-light/35 border border-surface-light/50 p-3 rounded-xl relative overflow-hidden">
+            <span className="text-[9px] uppercase font-extrabold text-muted block tracking-wider">Total Sales</span>
+            <span className="text-lg font-extrabold text-secondary mt-1 block font-mono">
+              ${count.toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        {/* SVG Drawing Chart */}
+        <div className="bg-surface-light/20 border border-surface-light/30 p-3 rounded-xl h-36 flex flex-col justify-between">
+          <span className="text-[9px] uppercase font-extrabold text-muted block tracking-wider">Revenue Trend</span>
+          <div className="relative flex-1 flex items-end justify-center w-full mt-2">
+            <svg viewBox="0 0 400 100" className="w-full h-full">
+              {/* Grid Lines */}
+              <line x1="0" y1="20" x2="400" y2="20" stroke="#121b2e" strokeWidth="1" strokeDasharray="3 3" />
+              <line x1="0" y1="50" x2="400" y2="50" stroke="#121b2e" strokeWidth="1" strokeDasharray="3 3" />
+              <line x1="0" y1="80" x2="400" y2="80" stroke="#121b2e" strokeWidth="1" strokeDasharray="3 3" />
+
+              {/* Glowing Line Path */}
+              <path
+                d="M 10 90 Q 60 20 110 70 T 210 30 T 310 80 T 390 10"
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                className={reducedMotion ? "" : "animate-draw-path"}
+                style={{
+                  strokeDasharray: 400,
+                  strokeDashoffset: reducedMotion ? 0 : 400,
+                }}
+              />
+              <path
+                d="M 10 90 Q 60 20 110 70 T 210 30 T 310 80 T 390 10"
+                fill="none"
+                stroke="#06b6d4"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                className={reducedMotion ? "opacity-30" : "animate-draw-path opacity-50"}
+                style={{
+                  strokeDasharray: 400,
+                  strokeDashoffset: reducedMotion ? 0 : 400,
+                  filter: "drop-shadow(0px 0px 4px rgba(6, 182, 212, 0.5))",
+                }}
+              />
+
+              {/* Data points */}
+              <circle cx="110" cy="70" r="4" fill="#06b6d4" className="animate-pulse" />
+              <circle cx="210" cy="30" r="4" fill="#2563eb" className="animate-pulse" />
+              <circle cx="390" cy="10" r="4" fill="#10b981" className="animate-pulse" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Animated Conversation State */}
+        <div className="bg-surface-light/10 border border-surface-light/20 rounded-xl p-3 min-h-[76px] flex flex-col justify-center space-y-2">
+          {/* Typing state or User question */}
+          {chatStep >= 1 && (
+            <div className="flex items-start space-x-2 animate-fade-in">
+              <div className="w-5 h-5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-extrabold shrink-0">
+                U
+              </div>
+              <p className="text-[10.5px] text-[#f8fafc] leading-relaxed bg-surface-light/60 px-2.5 py-1.5 rounded-r-xl rounded-bl-xl font-medium">
+                What was our top category by sales?
+              </p>
+            </div>
+          )}
+
+          {/* AI Message typing indicator or completed response */}
+          {chatStep === 2 && (
+            <div className="flex items-center space-x-2 animate-pulse text-muted pl-1">
+              <span className="text-[9px] font-bold uppercase tracking-wider">AI is thinking...</span>
+              <div className="flex space-x-1">
+                <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          )}
+
+          {chatStep === 3 && (
+            <div className="flex items-start space-x-2 animate-fade-in">
+              <div className="w-5 h-5 rounded bg-accent/10 border border-accent/20 text-accent-light flex items-center justify-center text-[10px] font-extrabold shrink-0">
+                AI
+              </div>
+              <p className="text-[10.5px] text-muted leading-relaxed bg-surface border border-surface-light/40 px-2.5 py-1.5 rounded-r-xl rounded-bl-xl">
+                <span className="font-semibold text-white">Electronics</span> was the top category, generating <span className="text-success font-semibold">$24,850</span> in sales.
+              </p>
+            </div>
+          )}
+
+          {chatStep === 0 && (
+            <div className="text-center py-2 text-[10px] text-muted italic font-semibold">
+              Ask questions to your AI Data Analyst...
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -70,6 +238,22 @@ function HomeContent() {
   // UI Panels collapsing states
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(true);
+
+  // Prefers reduced motion media query hook
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mediaQuery.matches);
+    const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", listener);
+    return () => mediaQuery.removeEventListener("change", listener);
+  }, []);
+
+  // Smooth scroll down to file upload container
+  const scrollToUpload = () => {
+    document.getElementById("upload-zone")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   // Automatically collapse preview when dashboard loaded
   const handleDashboardLoaded = () => {
@@ -410,43 +594,41 @@ function HomeContent() {
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 space-y-8">
-
-      {/* Page Title & Context Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-6">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-            File Upload & Parsing
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Upload CSV or Excel spreadsheets to parse them and configure column metadata entirely in-browser.
-          </p>
-        </div>
-        {parsedData && (
-          <button
-            onClick={handleClear}
-            className="flex items-center space-x-2 px-4 py-2 bg-rose-950/20 hover:bg-rose-900/30 text-rose-400 border border-rose-900/40 hover:border-rose-900/60 rounded-lg text-sm transition font-medium"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Clear / Upload New</span>
-          </button>
-        )}
-      </div>
+      {/* Inject custom CSS keyframe animations */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes draw-path {
+          from { stroke-dashoffset: 400; }
+          to { stroke-dashoffset: 0; }
+        }
+        .animate-draw-path {
+          stroke-dasharray: 400;
+          stroke-dashoffset: 400;
+          animation: draw-path 4s linear infinite;
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.4s ease-out forwards;
+        }
+      `}} />
 
       {/* REACTIVATION INFO BOX */}
       {reactivateId && targetDashboard && !parsedData && (
-        <div className="bg-blue-950/25 border border-blue-900/30 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-3xl mx-auto animate-fade-in">
+        <div className="bg-surface border border-surface-light p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-3xl mx-auto animate-fade-in shadow-glow-accent">
           <div className="flex items-start space-x-3">
-            <RefreshCw className="h-5 w-5 text-accent mt-0.5 animate-spin flex-shrink-0" />
+            <RefreshCw className="h-5 w-5 text-secondary mt-0.5 animate-spin flex-shrink-0" />
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-white">Reactivating Saved Dashboard</h4>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Please upload the original spreadsheet for &quot;<strong className="text-gray-300">{targetDashboard.title}</strong>&quot; to restore interactive views and chats.
+              <p className="text-xs text-muted leading-relaxed">
+                Please upload the original spreadsheet for &quot;<strong className="text-white">{targetDashboard.title}</strong>&quot; to restore interactive views and chats.
               </p>
             </div>
           </div>
           <button
             onClick={() => router.replace("/")}
-            className="text-xs text-gray-400 hover:text-white transition font-medium underline shrink-0"
+            className="text-xs text-muted hover:text-white transition font-bold underline shrink-0 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded"
           >
             Cancel Reactivation
           </button>
@@ -455,71 +637,153 @@ function HomeContent() {
 
       {/* REACTIVATION WARNING MODAL / TOAST */}
       {reactivateWarning && (
-        <div className="bg-amber-950/20 border border-amber-900/30 p-4 rounded-xl flex items-start space-x-3 max-w-3xl mx-auto animate-fade-in text-amber-400">
+        <div className="bg-warning/10 border border-warning/30 p-4 rounded-xl flex items-start space-x-3 max-w-3xl mx-auto animate-fade-in text-warning">
           <XCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="text-xs font-bold text-white">Schema Mismatch Detected</p>
-            <p className="text-xs text-gray-400 leading-relaxed">{reactivateWarning}</p>
+            <p className="text-xs text-muted leading-relaxed">{reactivateWarning}</p>
           </div>
         </div>
       )}
 
       {/* Main Upload Area (when no file is successfully parsed) */}
       {!parsedData && (
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={triggerFileBrowser}
-            className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center space-y-4 ${
-              isDragging
-                ? "border-accent bg-accent/5 scale-[0.99]"
-                : "border-gray-800 hover:border-gray-700 bg-surface/50 hover:bg-surface/80"
-            }`}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileInputChange}
-              accept=".csv,.xlsx,.xls"
-              className="hidden"
-            />
+        <div className="space-y-16 py-8">
+          {/* Beautiful Hero section */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            {/* Hero Left Content */}
+            <div className="lg:col-span-7 space-y-6 text-left">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-accent/15 border border-accent/20 rounded-full">
+                <Sparkles className="h-4 w-4 text-accent-light animate-pulse" />
+                <span className="text-[11px] font-bold text-accent-light uppercase tracking-wider">
+                  Next-Gen Business Intelligence
+                </span>
+              </div>
 
-            <div className="h-14 w-14 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center">
-              <Upload className="h-7 w-7 text-accent" />
+              <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-none">
+                Your data, <span className="bg-gradient-to-r from-accent-light via-secondary to-secondary-light bg-clip-text text-transparent">explained in plain English</span>
+              </h2>
+
+              <p className="text-base sm:text-lg text-muted leading-relaxed max-w-2xl font-medium">
+                Upload a spreadsheet and get instant dashboards, deeper statistical insights, and an AI analyst you can ask anything — all running securely in your browser.
+              </p>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <button
+                  onClick={scrollToUpload}
+                  className="flex items-center justify-center space-x-2 px-6 py-3.5 bg-accent hover:bg-accent-light text-white font-extrabold rounded-xl text-sm transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-glow-accent hover:shadow-glow-secondary"
+                >
+                  <span>Launch Workspace & Upload</span>
+                  <ChevronDown className="h-4 w-4 animate-bounce mt-0.5" />
+                </button>
+                <Link
+                  href="/dashboards"
+                  className="flex items-center justify-center space-x-2 px-6 py-3.5 bg-surface-light/35 hover:bg-surface-light/70 text-white font-bold border border-surface-light/50 hover:border-muted/30 rounded-xl text-sm transition-all focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                >
+                  <span>View Saved Dashboards</span>
+                </Link>
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-lg font-semibold text-white">Drag & drop your spreadsheet here</p>
-              <p className="text-sm text-gray-400">
-                or <span className="text-accent hover:underline font-medium">browse your files</span>
+            {/* Hero Right Preview Animation */}
+            <div className="lg:col-span-5 flex justify-center">
+              <MiniDashboardPreview reducedMotion={reducedMotion} />
+            </div>
+          </section>
+
+          {/* Upload Zone Section */}
+          <div id="upload-zone" className="max-w-4xl mx-auto space-y-8 pt-12 border-t border-surface-light/20">
+            <div className="text-center space-y-2">
+              <h3 className="font-display text-2xl font-bold text-white tracking-tight">
+                Upload your data
+              </h3>
+              <p className="text-sm text-muted max-w-md mx-auto">
+                CSV or Excel files are parsed securely in memory. Your raw rows never leave your computer.
               </p>
             </div>
 
-            <p className="text-xs text-gray-500 font-medium">
-              Accepts .CSV, .XLSX, or .XLS • Max 5MB
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={triggerFileBrowser}
+              className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center space-y-4 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none ${
+                isDragging
+                  ? "border-secondary bg-secondary/5 scale-[0.99] shadow-glow-secondary"
+                  : "border-surface-light/85 hover:border-muted/40 bg-surface/40 hover:bg-surface/70"
+              }`}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  triggerFileBrowser();
+                }
+              }}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInputChange}
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+              />
+
+              <div className="h-14 w-14 rounded-2xl bg-accent/15 border border-accent/20 flex items-center justify-center shadow-glow-accent">
+                <Upload className="h-7 w-7 text-accent-light" />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-lg font-bold text-white">Drag & drop your spreadsheet here</p>
+                <p className="text-sm text-muted font-medium">
+                  or <span className="text-secondary hover:text-secondary-light hover:underline font-bold transition-colors">browse your files</span>
+                </p>
+              </div>
+
+              <p className="text-xs text-muted/60 font-semibold uppercase tracking-wider">
+                Accepts .CSV, .XLSX, or .XLS • Max 5MB
+              </p>
+            </div>
+
+            {/* Loader */}
+            {isPending && (
+              <div className="flex items-center justify-center space-x-3 p-4 bg-surface/50 border border-surface-light/50 rounded-xl">
+                <RefreshCw className="h-5 w-5 text-secondary animate-spin" />
+                <span className="text-sm text-muted font-bold">Parsing and analyzing dataset columns...</span>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="flex items-start space-x-3 p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl animate-fade-in">
+                <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-rose-400">Unable to Parse File</p>
+                  <p className="text-xs text-muted leading-relaxed font-medium">{error}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Active Workspace Header Bar (Visible only when file loaded) */}
+      {parsedData && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-light pb-6">
+          <div>
+            <h1 className="text-3xl font-display font-extrabold tracking-tight bg-gradient-to-r from-white via-foreground to-muted bg-clip-text text-transparent">
+              Interactive Workspace
+            </h1>
+            <p className="text-muted text-sm mt-1 font-semibold">
+              Configure column overrides, query database directly, and consult your custom visual workspace.
             </p>
           </div>
-
-          {/* Loader */}
-          {isPending && (
-            <div className="flex items-center justify-center space-x-3 p-4 bg-surface border border-gray-800 rounded-xl">
-              <RefreshCw className="h-5 w-5 text-accent animate-spin" />
-              <span className="text-sm text-gray-300 font-medium">Parsing and analyzing dataset columns...</span>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {error && (
-            <div className="flex items-start space-x-3 p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl">
-              <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-rose-400">Unable to Parse File</p>
-                <p className="text-xs text-gray-300 leading-relaxed">{error}</p>
-              </div>
-            </div>
-          )}
+          <button
+            onClick={handleClear}
+            className="flex items-center space-x-2 px-4 py-2 bg-rose-950/20 hover:bg-rose-900/40 text-rose-400 border border-rose-900/30 hover:border-rose-900/60 rounded-xl text-sm transition-all duration-300 font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Clear / Upload New</span>
+          </button>
         </div>
       )}
 
@@ -527,32 +791,32 @@ function HomeContent() {
       {parsedData && (
         <div className="space-y-8 animate-fade-in">
           {/* File summary bar */}
-          <div className="bg-surface border border-gray-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="bg-surface/80 border border-surface-light p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-glow-accent">
             <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                <FileSpreadsheet className="h-6 w-6 text-emerald-400" />
+              <div className="h-12 w-12 rounded-xl bg-success/10 border border-success/20 flex items-center justify-center flex-shrink-0 shadow-glow-secondary">
+                <FileSpreadsheet className="h-6 w-6 text-success" />
               </div>
               <div>
-                <h3 className="font-semibold text-white text-base leading-tight truncate max-w-md">
+                <h3 className="font-display font-bold text-white text-base leading-tight truncate max-w-md">
                   {parsedData.fileName}
                 </h3>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-muted mt-1 font-semibold">
                   Size: {formatBytes(parsedData.fileSize)}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-6 self-stretch sm:self-auto justify-between border-t sm:border-t-0 border-gray-800 pt-3 sm:pt-0">
+            <div className="flex items-center gap-6 self-stretch sm:self-auto justify-between border-t sm:border-t-0 border-surface-light/40 pt-3 sm:pt-0">
               <div className="text-center sm:text-right">
-                <span className="block text-xs text-gray-400 font-medium">Total Rows</span>
-                <span className="text-lg font-bold text-white">
+                <span className="block text-[10px] text-muted font-bold uppercase tracking-wider">Total Rows</span>
+                <span className="text-lg font-extrabold text-white">
                   {parsedData.rawRows.length.toLocaleString()}
                 </span>
               </div>
-              <div className="h-8 w-[1px] bg-gray-800 hidden sm:block"></div>
+              <div className="h-8 w-[1px] bg-surface-light hidden sm:block"></div>
               <div className="text-center sm:text-right">
-                <span className="block text-xs text-gray-400 font-medium">Total Columns</span>
-                <span className="text-lg font-bold text-white">
+                <span className="block text-[10px] text-muted font-bold uppercase tracking-wider">Total Columns</span>
+                <span className="text-lg font-extrabold text-white">
                   {parsedData.columns.length}
                 </span>
               </div>
@@ -560,42 +824,42 @@ function HomeContent() {
           </div>
 
           {/* Table Container */}
-          <div className="bg-surface border border-gray-800 rounded-xl overflow-hidden flex flex-col">
+          <div className="bg-surface border border-surface-light rounded-2xl overflow-hidden flex flex-col">
             <button
               onClick={() => setIsPreviewCollapsed(!isPreviewCollapsed)}
-              className="px-6 py-4 border-b border-gray-800 flex items-center justify-between hover:bg-gray-900/30 transition text-left w-full outline-none"
+              className="px-6 py-4 border-b border-surface-light/60 flex items-center justify-between hover:bg-surface-light/20 transition-all duration-300 text-left w-full outline-none focus-visible:bg-surface-light/10"
             >
               <div className="flex items-center space-x-2">
-                <TableProperties className="h-4 w-4 text-accent" />
-                <span className="text-sm font-semibold text-white">Data Preview (First 20 Rows)</span>
+                <TableProperties className="h-4 w-4 text-secondary" />
+                <span className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Data Preview (First 20 Rows)</span>
                 {isPreviewCollapsed && (
-                  <span className="text-[10px] bg-gray-900 border border-gray-800 text-gray-400 font-semibold px-2 py-0.5 rounded ml-2">
+                  <span className="text-[10px] bg-background border border-surface-light text-muted font-bold px-2 py-0.5 rounded ml-2">
                     Collapsed
                   </span>
                 )}
               </div>
-              <div className="flex items-center space-x-3 text-xs text-gray-400">
+              <div className="flex items-center space-x-3 text-xs text-muted font-semibold">
                 <span className="hidden sm:inline">Type overrides are applied immediately</span>
-                {isPreviewCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                {isPreviewCollapsed ? <ChevronDown className="h-4 w-4 text-white" /> : <ChevronUp className="h-4 w-4 text-white" />}
               </div>
             </button>
 
             {!isPreviewCollapsed && (
               <>
-                <div className="overflow-x-auto w-full">
+                <div className="overflow-x-auto w-full select-none">
                   <table className="w-full text-left border-collapse table-auto">
                     <thead>
-                      <tr className="border-b border-gray-800 bg-background/50">
+                      <tr className="border-b border-surface-light bg-background/50">
                         {parsedData.schema.map((col: ColumnSchema) => (
                           <th
                             key={col.columnName}
-                            className="px-6 py-4 font-medium text-xs align-top border-r border-gray-800 last:border-r-0 min-w-[200px]"
+                            className="px-6 py-4 font-semibold text-xs align-top border-r border-surface-light last:border-r-0 min-w-[200px]"
                           >
                             {/* Interactive schema header */}
                             <div className="flex flex-col space-y-3">
                               {/* Type dropdown override */}
                               <div className="flex items-center justify-between">
-                                <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-md bg-gray-900 border border-gray-800 text-[10px] font-semibold tracking-wide uppercase text-gray-300">
+                                <span className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-lg bg-background border border-surface-light text-[10px] font-extrabold tracking-wide uppercase text-muted">
                                   {getTypeIcon(col.currentType)}
                                   <span>{col.currentType}</span>
                                 </span>
@@ -603,7 +867,7 @@ function HomeContent() {
                                 <select
                                   value={col.currentType}
                                   onChange={(e) => handleTypeOverride(col.columnName, e.target.value as ColumnType)}
-                                  className="text-[10px] bg-gray-950 border border-gray-800 hover:border-gray-700 text-gray-400 hover:text-white rounded px-1.5 py-0.5 font-medium outline-none cursor-pointer focus:border-accent"
+                                  className="text-[10px] bg-background border border-surface-light hover:border-muted/40 text-muted hover:text-white rounded-lg px-2 py-1 font-bold outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                                 >
                                   <option value="text">📝 text</option>
                                   <option value="number">🔢 number</option>
@@ -614,19 +878,19 @@ function HomeContent() {
                               </div>
 
                               {/* Original Display Name */}
-                              <span className="text-sm font-bold text-white tracking-wide block truncate" title={col.displayName}>
+                              <span className="text-sm font-extrabold text-white tracking-wide block truncate font-display" title={col.displayName}>
                                 {col.displayName}
                               </span>
 
                               {/* Stats metadata banner */}
-                              <div className="flex flex-col space-y-1 text-[10px] text-gray-500 font-semibold border-t border-gray-800/60 pt-2">
+                              <div className="flex flex-col space-y-1 text-[10px] text-muted font-bold border-t border-surface-light/40 pt-2">
                                 <div className="flex justify-between">
-                                  <span>Detected:</span>
-                                  <span className="text-gray-400">{getTypeLabel(col.detectedType)}</span>
+                                  <span className="text-muted/60">Detected:</span>
+                                  <span className="text-white">{getTypeLabel(col.detectedType)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span>Uniqueness:</span>
-                                  <span className="text-gray-400">
+                                  <span className="text-muted/60">Uniqueness:</span>
+                                  <span className="text-white">
                                     {col.totalCount > 0
                                       ? `${col.uniqueCount} (${((col.uniqueCount / col.totalCount) * 100).toFixed(0)}%)`
                                       : "0 (0%)"}
@@ -638,11 +902,11 @@ function HomeContent() {
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <tbody className="divide-y divide-surface-light">
                       {parsedData.rawRows.slice(0, 20).map((row, rowIdx) => (
                         <tr
                           key={rowIdx}
-                          className="hover:bg-gray-900/30 transition-colors"
+                          className="hover:bg-surface-light/20 transition-colors duration-200"
                         >
                           {parsedData.schema.map((col: ColumnSchema) => {
                             const rawVal = row[col.columnName];
@@ -664,12 +928,12 @@ function HomeContent() {
                             return (
                               <td
                                 key={col.columnName}
-                                className="px-6 py-3 text-sm border-r border-gray-800 last:border-r-0 max-w-[280px] truncate"
+                                className="px-6 py-3.5 text-sm border-r border-surface-light last:border-r-0 max-w-[280px] truncate"
                               >
                                 {displayCell !== "" ? (
-                                  <span className="text-gray-200 font-medium">{displayCell}</span>
+                                  <span className="text-foreground font-semibold">{displayCell}</span>
                                 ) : (
-                                  <span className="text-gray-600 italic text-xs">null</span>
+                                  <span className="text-muted/40 italic text-xs">null</span>
                                 )}
                               </td>
                             );
@@ -680,7 +944,7 @@ function HomeContent() {
                   </table>
                 </div>
 
-                <div className="px-6 py-4 border-t border-gray-800 bg-background/30 flex justify-between items-center text-xs text-gray-400">
+                <div className="px-6 py-4 border-t border-surface-light bg-background/30 flex justify-between items-center text-xs text-muted font-semibold">
                   <span>Showing {Math.min(20, parsedData.rawRows.length)} of {parsedData.rawRows.length.toLocaleString()} rows</span>
                   {parsedData.rawRows.length > 20 && (
                     <span>Remaining {parsedData.rawRows.length - 20} rows omitted from preview.</span>
@@ -691,14 +955,14 @@ function HomeContent() {
           </div>
 
           {/* 📊 Automatic Analytics Dashboard */}
-          <div className="space-y-4 pt-4 border-t border-gray-800/60">
+          <div className="space-y-4 pt-4 border-t border-surface-light/25">
             <div className="flex items-center space-x-3">
-              <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20">
-                <LayoutDashboard className="h-5 w-5 text-accent" />
+              <div className="bg-accent/10 p-2 rounded-xl border border-accent/20 shadow-glow-accent">
+                <LayoutDashboard className="h-5 w-5 text-accent-light" />
               </div>
               <div>
-                <h2 className="text-xl font-extrabold text-white tracking-tight">Interactive Analytics Dashboard</h2>
-                <p className="text-xs text-gray-400 mt-0.5 animate-fade-in">Automatically generated insights and trends based on your file&apos;s schema.</p>
+                <h2 className="font-display text-xl font-extrabold text-white tracking-tight">Interactive Analytics Dashboard</h2>
+                <p className="text-xs text-muted mt-0.5 font-semibold animate-fade-in">Automatically generated insights and trends based on your file&apos;s schema.</p>
               </div>
             </div>
 
@@ -713,7 +977,7 @@ function HomeContent() {
           </div>
 
           {/* 🧠 Python Advanced Insights Section */}
-          <div className="pt-4 border-t border-gray-800/60 space-y-4">
+          <div className="pt-4 border-t border-surface-light/25 space-y-4">
             <AdvancedInsights
               parsedData={parsedData}
               datasetLoaded={datasetLoaded}
@@ -722,7 +986,7 @@ function HomeContent() {
           </div>
 
           {/* 💬 AI Text-to-SQL Co-Pilot Section */}
-          <div className="pt-4 border-t border-gray-800/60 space-y-4">
+          <div className="pt-4 border-t border-surface-light/25 space-y-4">
             <ChatPanel
               datasetLoaded={datasetLoaded}
               schema={parsedData.schema}
@@ -732,44 +996,44 @@ function HomeContent() {
           </div>
 
           {/* 🛠️ Debug SQL Console (Visible only after a file is loaded) */}
-          <div className="bg-surface border border-gray-800 rounded-xl overflow-hidden flex flex-col">
+          <div className="bg-surface border border-surface-light rounded-2xl overflow-hidden flex flex-col">
             <button
               onClick={() => setIsConsoleCollapsed(!isConsoleCollapsed)}
-              className="px-6 py-5 flex items-center justify-between hover:bg-gray-900/30 transition text-left w-full outline-none animate-fade-in"
+              className="px-6 py-5 flex items-center justify-between hover:bg-surface-light/20 transition-all duration-300 text-left w-full outline-none focus-visible:bg-surface-light/10"
             >
               <div className="flex items-center space-x-3">
-                <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20">
-                  <Terminal className="h-5 w-5 text-accent" />
+                <div className="bg-accent/10 p-2 rounded-xl border border-accent/20 shadow-glow-accent">
+                  <Terminal className="h-5 w-5 text-accent-light" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h2 className="text-lg font-bold text-white">Debug SQL Console</h2>
+                    <h2 className="font-display text-lg font-bold text-white">Debug SQL Console</h2>
                     {isConsoleCollapsed && (
-                      <span className="text-[10px] bg-gray-900 border border-gray-800 text-gray-400 font-semibold px-2 py-0.5 rounded">
+                      <span className="text-[10px] bg-background border border-surface-light text-muted font-bold px-2 py-0.5 rounded">
                         Collapsed
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">Run real-time analytical SQL queries directly on your dataset.</p>
+                  <p className="text-xs text-muted mt-0.5 font-semibold">Run real-time analytical SQL queries directly on your dataset.</p>
                 </div>
               </div>
-              <div className="text-gray-400">
+              <div className="text-white">
                 {isConsoleCollapsed ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
               </div>
             </button>
 
             {!isConsoleCollapsed && (
-              <div className="p-6 pt-0 border-t border-gray-800 space-y-6">
+              <div className="p-6 pt-0 border-t border-surface-light space-y-6">
                 {/* Status Banner */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4 pt-4">
-                  <div className="text-xs text-gray-400">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-light pb-4 pt-4">
+                  <div className="text-xs text-muted font-semibold">
                     Interact directly with DuckDB using raw SQL.
                   </div>
-                  <div className="flex items-center space-x-2 bg-gray-950 border border-gray-800 px-3 py-1.5 rounded-lg text-xs font-semibold self-start sm:self-auto">
+                  <div className="flex items-center space-x-2 bg-background border border-surface-light px-3 py-1.5 rounded-xl text-xs font-bold self-start sm:self-auto">
                     {dbLoading ? (
                       <>
-                        <RefreshCw className="h-3 w-3 text-blue-400 animate-spin" />
-                        <span className="text-blue-400">Initializing DuckDB WASM...</span>
+                        <RefreshCw className="h-3 w-3 text-accent animate-spin" />
+                        <span className="text-accent-light">Initializing DuckDB WASM...</span>
                       </>
                     ) : dbError ? (
                       <>
@@ -778,8 +1042,8 @@ function HomeContent() {
                       </>
                     ) : syncStatus.loading ? (
                       <>
-                        <RefreshCw className="h-3 w-3 text-amber-500 animate-spin" />
-                        <span className="text-amber-400">Syncing database schema...</span>
+                        <RefreshCw className="h-3 w-3 text-warning animate-spin" />
+                        <span className="text-warning">Syncing database schema...</span>
                       </>
                     ) : syncStatus.error ? (
                       <>
@@ -788,13 +1052,13 @@ function HomeContent() {
                       </>
                     ) : datasetLoaded ? (
                       <>
-                        <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-emerald-400 font-semibold">DB synced: &apos;dataset&apos; active</span>
+                        <CheckCircle className="h-3.5 w-3.5 text-success" />
+                        <span className="text-success font-bold">DB synced: &apos;dataset&apos; active</span>
                       </>
                     ) : (
                       <>
-                        <Server className="h-3 w-3 text-gray-500" />
-                        <span className="text-gray-400">DuckDB idle</span>
+                        <Server className="h-3 w-3 text-muted" />
+                        <span className="text-muted">DuckDB idle</span>
                       </>
                     )}
                   </div>
@@ -802,7 +1066,7 @@ function HomeContent() {
 
                 {/* Quick Sample Queries */}
                 <div className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Quick Test Queries</span>
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-muted block">Quick Test Queries</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {samples.map((sample, idx) => (
                       <button
@@ -812,13 +1076,13 @@ function HomeContent() {
                           setSqlQuery(sample.query);
                           handleRunQuery(sample.query);
                         }}
-                        className="flex flex-col items-start p-3 bg-gray-950 hover:bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-lg text-left transition"
+                        className="flex flex-col items-start p-3.5 bg-background hover:bg-surface-light/40 border border-surface-light hover:border-muted/30 rounded-xl text-left transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                       >
-                        <span className="text-xs font-bold text-blue-400 flex items-center space-x-1">
+                        <span className="text-xs font-bold text-accent-light flex items-center space-x-1">
                           <span>{sample.label}</span>
-                          <ChevronRight className="h-3 w-3" />
+                          <ChevronRight className="h-3 w-3 text-secondary" />
                         </span>
-                        <span className="text-[10px] text-gray-400 mt-1 leading-snug">{sample.description}</span>
+                        <span className="text-[10px] text-muted mt-1 leading-snug font-medium">{sample.description}</span>
                       </button>
                     ))}
                   </div>
@@ -827,17 +1091,17 @@ function HomeContent() {
                 {/* Input Console */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="query-console" className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    <label htmlFor="query-console" className="text-xs font-extrabold uppercase tracking-wider text-muted">
                       SQL Query Input
                     </label>
-                    <span className="text-[10px] text-gray-500 font-medium">Table name: <code className="bg-gray-950 px-1 py-0.5 rounded text-gray-300">dataset</code></span>
+                    <span className="text-[10px] text-muted font-bold">Table name: <code className="bg-background px-1.5 py-0.5 rounded border border-surface-light text-foreground">dataset</code></span>
                   </div>
                   <div className="relative">
                     <textarea
                       id="query-console"
                       value={sqlQuery}
                       onChange={(e) => setSqlQuery(e.target.value)}
-                      className="w-full h-32 bg-gray-950 border border-gray-800 focus:border-accent rounded-lg p-4 font-mono text-sm text-gray-100 placeholder-gray-700 outline-none transition focus:ring-1 focus:ring-accent/30"
+                      className="w-full h-32 bg-background border border-surface-light focus:border-secondary rounded-xl p-4 font-mono text-sm text-foreground placeholder-muted/30 outline-none transition-all focus:ring-2 focus:ring-secondary/20"
                       placeholder="SELECT * FROM dataset LIMIT 10..."
                     />
                   </div>
@@ -846,7 +1110,7 @@ function HomeContent() {
                     type="button"
                     onClick={() => handleRunQuery()}
                     disabled={queryRunning || dbLoading || syncStatus.loading}
-                    className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 bg-accent hover:bg-blue-600 disabled:bg-gray-800 text-white font-semibold rounded-lg text-sm transition disabled:cursor-not-allowed shadow-lg shadow-accent/10"
+                    className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-3 bg-accent hover:bg-accent-light disabled:bg-surface-light/50 text-white font-bold rounded-xl text-sm transition-all duration-300 disabled:cursor-not-allowed shadow-glow-accent focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
                   >
                     {queryRunning ? (
                       <>
@@ -855,7 +1119,7 @@ function HomeContent() {
                       </>
                     ) : (
                       <>
-                        <Play className="h-4 w-4 fill-white" />
+                        <Play className="h-4 w-4 fill-white text-white" />
                         <span>Run Query</span>
                       </>
                     )}
@@ -867,8 +1131,8 @@ function HomeContent() {
                   <div className="flex items-start space-x-3 p-4 bg-rose-950/20 border border-rose-900/30 rounded-xl animate-fade-in">
                     <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-rose-400">Query Failed</p>
-                      <p className="text-xs text-gray-300 leading-relaxed font-mono">{queryError}</p>
+                      <p className="text-sm font-bold text-rose-400">Query Failed</p>
+                      <p className="text-xs text-muted leading-relaxed font-mono">{queryError}</p>
                     </div>
                   </div>
                 )}
@@ -877,48 +1141,48 @@ function HomeContent() {
                 {queryResults !== null && (
                   <div className="space-y-4 animate-fade-in">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Query Output</span>
-                      <span className="text-xs text-emerald-400 font-semibold bg-emerald-950/20 px-2.5 py-1 border border-emerald-900/30 rounded-full">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-muted">Query Output</span>
+                      <span className="text-xs text-success font-bold bg-success/10 px-3 py-1 border border-success/20 rounded-full shadow-glow-secondary">
                         Returned {queryResults.length.toLocaleString()} row{queryResults.length === 1 ? "" : "s"}
                       </span>
                     </div>
 
                     {queryResults.length === 0 ? (
-                      <div className="text-center py-8 bg-gray-950 border border-gray-800 rounded-lg">
-                        <CodeXml className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">No rows matching your query were found.</p>
+                      <div className="text-center py-12 bg-background border border-surface-light rounded-xl">
+                        <CodeXml className="h-8 w-8 text-muted/30 mx-auto mb-2" />
+                        <p className="text-sm text-muted font-semibold">No rows matching your query were found.</p>
                       </div>
                     ) : (
-                      <div className="bg-gray-950 border border-gray-800 rounded-lg overflow-hidden flex flex-col max-h-96">
+                      <div className="bg-background border border-surface-light rounded-xl overflow-hidden flex flex-col max-h-96">
                         <div className="overflow-x-auto w-full">
                           <table className="w-full text-left border-collapse table-auto">
                             <thead>
-                              <tr className="border-b border-gray-800 bg-background/50">
+                              <tr className="border-b border-surface-light bg-surface/50">
                                 {Object.keys(queryResults[0]).map((colName) => (
                                   <th
                                     key={colName}
-                                    className="px-5 py-3 font-semibold text-xs text-gray-400 uppercase tracking-wider border-r border-gray-800 last:border-r-0"
+                                    className="px-5 py-3 font-bold text-xs text-muted uppercase tracking-wider border-r border-surface-light last:border-r-0"
                                   >
                                     {colName}
                                   </th>
                                 ))}
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-800">
+                            <tbody className="divide-y divide-surface-light">
                               {queryResults.slice(0, 100).map((row, rowIdx) => (
                                 <tr
                                   key={rowIdx}
-                                  className="hover:bg-gray-900/20 transition-colors"
+                                  className="hover:bg-surface-light/10 transition-colors duration-150"
                                 >
                                   {Object.keys(queryResults[0]).map((colName) => {
                                     const val = row[colName];
                                     return (
                                       <td
                                         key={colName}
-                                        className="px-5 py-2.5 text-sm border-r border-gray-800 last:border-r-0 text-gray-200"
+                                        className="px-5 py-2.5 text-sm border-r border-surface-light last:border-r-0 text-foreground font-medium"
                                       >
                                         {val === null || val === undefined ? (
-                                          <span className="text-gray-600 italic text-xs">null</span>
+                                          <span className="text-muted/30 italic text-xs">null</span>
                                         ) : typeof val === "object" ? (
                                           JSON.stringify(val)
                                         ) : (
@@ -933,7 +1197,7 @@ function HomeContent() {
                           </table>
                         </div>
                         {queryResults.length > 100 && (
-                          <div className="px-5 py-3 bg-background/30 text-[11px] text-gray-500 border-t border-gray-800">
+                          <div className="px-5 py-3 bg-surface/30 text-[11px] text-muted border-t border-surface-light">
                             * Query output truncated. Showing first 100 rows.
                           </div>
                         )}
@@ -958,8 +1222,8 @@ export default function Home() {
     <Suspense
       fallback={
         <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-20">
-          <RefreshCw className="h-8 w-8 text-accent animate-spin" />
-          <span className="text-sm text-gray-400 font-medium">Initializing workspace co-pilot...</span>
+          <RefreshCw className="h-8 w-8 text-secondary animate-spin" />
+          <span className="text-sm text-muted font-bold">Initializing workspace co-pilot...</span>
         </div>
       }
     >

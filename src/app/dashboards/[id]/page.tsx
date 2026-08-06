@@ -181,31 +181,31 @@ export default function DashboardDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-20">
-        <RefreshCw className="h-8 w-8 text-accent animate-spin" />
-        <span className="text-sm text-gray-400 font-medium">Loading dashboard and security states...</span>
+      <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-20 font-sans">
+        <RefreshCw className="h-8 w-8 text-secondary animate-spin" />
+        <span className="text-sm text-muted font-bold">Loading dashboard and security states...</span>
       </div>
     );
   }
 
   if (error || !dashboard) {
     return (
-      <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-        <div className="h-14 w-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto">
+      <div className="flex-1 w-full max-w-2xl mx-auto px-4 py-20 text-center space-y-6 font-sans">
+        <div className="h-14 w-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto shadow-glow-secondary">
           <AlertCircle className="h-7 w-7" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-white">Dashboard Unavailable</h2>
-          <p className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
+          <h2 className="font-display text-xl font-bold text-white uppercase tracking-wider">Dashboard Unavailable</h2>
+          <p className="text-sm text-muted max-w-md mx-auto leading-relaxed font-semibold">
             {error || "The requested dashboard does not exist or has been deleted."}
           </p>
         </div>
         <div className="pt-2">
           <Link
             href="/dashboards"
-            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-bold transition border border-gray-800"
+            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-background hover:bg-surface-light text-white font-bold rounded-xl text-xs transition border border-surface-light focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 text-muted" />
             <span>Back to My Dashboards</span>
           </Link>
         </div>
@@ -216,38 +216,38 @@ export default function DashboardDetailPage() {
   const { columnsCount, rowsCount, schemaList } = getStats(dashboard.dataset_summary);
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 space-y-8 font-sans">
       {/* Navigation & Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-light pb-6">
         <div className="space-y-2">
           <Link
             href="/dashboards"
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-gray-400 hover:text-white transition group"
+            className="inline-flex items-center space-x-1.5 text-xs font-bold text-muted hover:text-white transition group focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded-lg p-1"
           >
             <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
             <span>Back to Saved Dashboards</span>
           </Link>
 
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-white">
+            <h1 className="font-display text-2xl font-extrabold tracking-tight text-white">
               {dashboard.title || "Untitled Dashboard"}
             </h1>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-900 border border-gray-800 text-[10px] font-semibold tracking-wide uppercase">
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-background border border-surface-light text-[10px] font-extrabold tracking-wide uppercase select-none">
               {isOwner ? (
                 <>
-                  <Lock className="h-3 w-3 text-blue-400" />
-                  <span className="text-blue-400">Owner View</span>
+                  <Lock className="h-3 w-3 text-accent-light" />
+                  <span className="text-accent-light">Owner View</span>
                 </>
               ) : (
                 <>
-                  <Globe className="h-3 w-3 text-amber-400" />
-                  <span className="text-amber-400">Shared/Guest Mode</span>
+                  <Globe className="h-3 w-3 text-warning" />
+                  <span className="text-warning">Shared/Guest Mode</span>
                 </>
               )}
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 font-medium">
+          <p className="text-xs text-muted font-bold">
             Originally created {formatRelativeDate(dashboard.created_at)} • {columnsCount} columns, {rowsCount.toLocaleString()} rows
           </p>
         </div>
@@ -255,16 +255,16 @@ export default function DashboardDetailPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleCopyLink}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-850 rounded-lg text-xs font-bold transition"
+            className="flex items-center space-x-2 px-4 py-2 bg-background hover:bg-surface-light text-muted hover:text-white border border-surface-light rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
           >
             {shareCopied ? (
               <>
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <span className="text-emerald-400">Link Copied!</span>
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <span className="text-success font-extrabold">Link Copied!</span>
               </>
             ) : (
               <>
-                <Share2 className="h-4 w-4" />
+                <Share2 className="h-4 w-4 text-muted" />
                 <span>Share Dashboard</span>
               </>
             )}
@@ -273,7 +273,7 @@ export default function DashboardDetailPage() {
           {!isReactivated && (
             <button
               onClick={handleReuploadRedirect}
-              className="flex items-center space-x-2 px-4 py-2 bg-accent hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition shadow-lg shadow-accent/15"
+              className="flex items-center space-x-2 px-4.5 py-2.5 bg-accent hover:bg-accent-light text-white rounded-xl text-xs font-extrabold transition-all duration-300 shadow-glow-accent hover:shadow-glow-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
             >
               <UploadCloud className="h-4 w-4" />
               <span>Re-upload File to Reactivate</span>
@@ -284,14 +284,14 @@ export default function DashboardDetailPage() {
 
       {/* REACTIVATION STATUS BANNER */}
       {!isReactivated && (
-        <div className="bg-amber-950/20 border border-amber-900/30 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in">
+        <div className="bg-warning/10 border border-warning/35 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fade-in shadow-inner">
           <div className="flex items-start space-x-3.5 pr-4">
-            <div className="h-10 w-10 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
+            <div className="h-10 w-10 bg-warning/15 border border-warning/20 rounded-xl flex items-center justify-center text-warning flex-shrink-0 shadow-glow-secondary">
               <Lock className="h-5 w-5" />
             </div>
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-white">This dashboard&apos;s data isn&apos;t stored for privacy.</h4>
-              <p className="text-xs text-gray-400 leading-relaxed">
+              <p className="text-xs text-muted leading-relaxed font-semibold">
                 In line with our absolute client-side privacy design, the raw spreadsheet data is never persisted on our servers. To reactivate live chart rendering and analytical AI chatting, simply re-upload the original file.
               </p>
             </div>
@@ -299,7 +299,7 @@ export default function DashboardDetailPage() {
 
           <button
             onClick={handleReuploadRedirect}
-            className="w-full md:w-auto flex-shrink-0 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-lg text-xs transition"
+            className="w-full md:w-auto flex-shrink-0 px-4.5 py-2.5 bg-warning hover:bg-warning/80 text-background font-extrabold rounded-xl text-xs transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
           >
             Re-upload original file
           </button>
@@ -310,7 +310,7 @@ export default function DashboardDetailPage() {
       {isReactivated && reactivatedParsedData ? (
         <div className="space-y-8 animate-fade-in">
           {/* Active Live Indicator */}
-          <div className="bg-emerald-950/25 border border-emerald-900/30 p-4 rounded-xl flex items-center space-x-3 text-emerald-400">
+          <div className="bg-success/10 border border-success/35 p-4 rounded-xl flex items-center space-x-3 text-success">
             <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
             <span className="text-xs font-bold leading-none">
               Dashboard fully reactivated with live database! Widgets are running real-time DuckDB queries against &apos;{reactivatedParsedData.fileName}&apos;.
@@ -334,7 +334,7 @@ export default function DashboardDetailPage() {
           </div>
 
           {/* Live AI Copilot Chat */}
-          <div className="pt-4 border-t border-gray-800/60">
+          <div className="pt-4 border-t border-surface-light/25">
             <ChatPanel
               datasetLoaded={true}
               schema={reactivatedParsedData.schema}
@@ -351,12 +351,12 @@ export default function DashboardDetailPage() {
           {/* Widgets Layout Description */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center space-x-2">
-              <LayoutDashboard className="h-4.5 w-4.5 text-accent" />
-              <span className="text-sm font-bold text-white uppercase tracking-wider">Saved Layout Configuration</span>
+              <LayoutDashboard className="h-4.5 w-4.5 text-accent-light" />
+              <span className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Saved Layout Configuration</span>
             </div>
 
             {dashboard.layout_config.length === 0 ? (
-              <div className="text-center py-12 bg-[#111827] border border-gray-850 rounded-xl text-gray-500 italic text-xs">
+              <div className="text-center py-12 bg-surface border border-surface-light rounded-2xl text-muted italic text-xs font-semibold">
                 No custom widgets configured for this layout.
               </div>
             ) : (
@@ -368,27 +368,27 @@ export default function DashboardDetailPage() {
                   return (
                     <div
                       key={widget.id}
-                      className={`${cardColSpan} bg-[#111827]/60 border border-gray-850 p-5 rounded-xl flex flex-col justify-between h-44 relative`}
+                      className={`${cardColSpan} bg-surface/60 border border-surface-light p-5 rounded-2xl flex flex-col justify-between h-44 relative shadow-md`}
                     >
-                      <div className="flex items-center justify-between border-b border-gray-850 pb-2.5">
-                        <div className="flex items-center space-x-2 text-gray-400">
-                          {widget.type === "line" && <TrendingUp className="h-4 w-4 text-[#3b82f6]/60" />}
-                          {widget.type === "bar" && <BarChart3 className="h-4 w-4 text-[#10b981]/60" />}
-                          {widget.type === "kpi" && <Hash className="h-4 w-4 text-blue-400/60" />}
-                          <span className="text-xs font-bold text-gray-300 truncate max-w-[150px]" title={widget.title}>
+                      <div className="flex items-center justify-between border-b border-surface-light/60 pb-2.5">
+                        <div className="flex items-center space-x-2 text-muted">
+                          {widget.type === "line" && <TrendingUp className="h-4 w-4 text-accent-light/50" />}
+                          {widget.type === "bar" && <BarChart3 className="h-4 w-4 text-success/50" />}
+                          {widget.type === "kpi" && <Hash className="h-4 w-4 text-secondary-light/50" />}
+                          <span className="font-display text-xs font-extrabold text-gray-300 truncate max-w-[150px]" title={widget.title}>
                             {widget.title}
                           </span>
                         </div>
-                        <span className="text-[9px] bg-gray-950 px-1.5 py-0.5 border border-gray-850 rounded text-gray-500 uppercase tracking-wider font-bold">
+                        <span className="text-[9px] bg-background px-2 py-0.5 border border-surface-light rounded-lg text-muted uppercase tracking-wider font-extrabold select-none">
                           {widget.type}
                         </span>
                       </div>
 
-                      <div className="flex-1 flex flex-col justify-center items-center text-center p-3 text-gray-500 text-xs italic">
+                      <div className="flex-1 flex flex-col justify-center items-center text-center p-3 text-muted/60 text-xs italic font-semibold leading-relaxed">
                         Awaiting original spreadsheet upload to load dataset...
                       </div>
 
-                      <div className="border-t border-gray-850/40 pt-2 text-[10px] text-gray-500 font-mono overflow-x-auto whitespace-nowrap scrollbar-none">
+                      <div className="border-t border-surface-light/40 pt-2 text-[10px] text-muted/50 font-mono overflow-x-auto whitespace-nowrap scrollbar-none select-all">
                         SQL: {widget.sql.slice(0, 50)}...
                       </div>
                     </div>
@@ -401,8 +401,8 @@ export default function DashboardDetailPage() {
           {/* Historical Chat Panel */}
           <div className="space-y-6">
             <div className="flex items-center space-x-2">
-              <Share2 className="h-4.5 w-4.5 text-accent" />
-              <span className="text-sm font-bold text-white uppercase tracking-wider">Historical Conversations</span>
+              <Share2 className="h-4.5 w-4.5 text-accent-light" />
+              <span className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Historical Conversations</span>
             </div>
 
             <ChatPanel
