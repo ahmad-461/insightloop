@@ -58,13 +58,17 @@ interface DashboardProps {
   datasetLoaded: boolean;
   runQuery: (sql: string) => Promise<Record<string, unknown>[] | { error: string }>;
   onDashboardLoaded?: () => void;
+  dashboardId: string | null;
+  setDashboardId: (id: string | null) => void;
 }
 
 export default function Dashboard({
   parsedData,
   datasetLoaded,
   runQuery,
-  onDashboardLoaded
+  onDashboardLoaded,
+  dashboardId,
+  setDashboardId
 }: DashboardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -539,24 +543,46 @@ export default function Dashboard({
         throw new Error("Supabase connection parameters are not fully set in the workspace. Please make sure variables are configured.");
       }
 
-      const { data, error: supabaseError } = await supabase
-        .from("dashboards")
-        .insert([
-          {
-            session_id: sessionId,
+      let resData;
+      if (dashboardId) {
+        // Update existing dashboard
+        const { data, error: supabaseError } = await supabase
+          .from("dashboards")
+          .update({
             title: titleToSave,
             layout_config: widgets,
             dataset_summary: parsedData.schema
-          }
-        ])
-        .select();
+          })
+          .eq("id", dashboardId)
+          .select();
 
-      if (supabaseError) {
-        throw new Error(supabaseError.message);
+        if (supabaseError) {
+          throw new Error(supabaseError.message);
+        }
+        resData = data;
+      } else {
+        // Insert new dashboard
+        const { data, error: supabaseError } = await supabase
+          .from("dashboards")
+          .insert([
+            {
+              session_id: sessionId,
+              title: titleToSave,
+              layout_config: widgets,
+              dataset_summary: parsedData.schema
+            }
+          ])
+          .select();
+
+        if (supabaseError) {
+          throw new Error(supabaseError.message);
+        }
+        resData = data;
       }
 
-      if (data && data[0]) {
-        setSaveSuccessId(data[0].id);
+      if (resData && resData[0]) {
+        setSaveSuccessId(resData[0].id);
+        setDashboardId(resData[0].id);
       } else {
         throw new Error("Did not receive a validation response from database.");
       }
@@ -574,7 +600,7 @@ export default function Dashboard({
     const cleanFileName = parsedData.fileName.replace(/\.(csv|xlsx|xls)$/i, "");
     setSaveTitle(cleanFileName);
     setSaveError(null);
-    setSaveSuccessId(null);
+    setSaveSuccessId(dashboardId); // Use shared dashboard ID if exists
     setShowSaveModal(true);
   };
 

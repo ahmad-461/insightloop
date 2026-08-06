@@ -12,10 +12,13 @@ import {
   CornerDownLeft,
   Bot,
   User,
-  ChartBar
+  ChartBar,
+  Cloud,
+  CloudOff
 } from "lucide-react";
 import { ColumnSchema } from "@/utils/parser";
 import { formatNumber } from "@/utils/formatter";
+import { supabase } from "@/utils/supabaseClient";
 import {
   ResponsiveContainer,
   BarChart,
@@ -38,20 +41,26 @@ export interface ChatMessage {
     yAxisKey: string;
   };
   error?: string;
+  synced?: boolean;
 }
 
 interface ChatPanelProps {
   datasetLoaded: boolean;
   schema: ColumnSchema[];
   runQuery: (sql: string) => Promise<Record<string, unknown>[] | { error: string }>;
+  dashboardId: string | null;
 }
 
-export default function ChatPanel({ datasetLoaded, schema, runQuery }: ChatPanelProps) {
+export default function ChatPanel({ datasetLoaded, schema, runQuery, dashboardId }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedSqlIds, setExpandedSqlIds] = useState<Record<string, boolean>>({});
+
+  // Phase 7: Tracking background syncing states to Supabase
+  const [isSyncingHistory, setIsSyncingHistory] = useState(false);
+  const [failedSyncIds, setFailedSyncIds] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,11 +74,62 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery }: ChatPanel
     setExpandedSqlIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Clear Chat history
+  // Clear Chat history (Local-only, per guidelines)
   const handleClearChat = () => {
     setMessages([]);
     setExpandedSqlIds({});
+    setFailedSyncIds([]);
   };
+
+  // Phase 7 Centralized Sync effect
+  useEffect(() => {
+    if (!dashboardId || isSyncingHistory) return;
+
+    // Find all unsynced messages that haven't failed syncing already
+    const unsynced = messages.filter((m) => !m.synced && !failedSyncIds.includes(m.id));
+    if (unsynced.length === 0) return;
+
+    const doSync = async () => {
+      setIsSyncingHistory(true);
+      const syncedIds: string[] = [];
+      const newFailedIds: string[] = [];
+
+      // Save unsynced messages in physical/chronological order
+      for (const msg of unsynced) {
+        try {
+          const { error } = await supabase
+            .from("chat_history")
+            .insert({
+              dashboard_id: dashboardId,
+              role: msg.role,
+              content: msg.content,
+            });
+
+          if (error) {
+            console.error("Failed to save chat message to Supabase:", error);
+            newFailedIds.push(msg.id);
+          } else {
+            syncedIds.push(msg.id);
+          }
+        } catch (err) {
+          console.error("Error saving chat message to Supabase:", err);
+          newFailedIds.push(msg.id);
+        }
+      }
+
+      if (syncedIds.length > 0) {
+        setMessages((prev) =>
+          prev.map((m) => (syncedIds.includes(m.id) ? { ...m, synced: true } : m))
+        );
+      }
+      if (newFailedIds.length > 0) {
+        setFailedSyncIds((prev) => [...prev, ...newFailedIds]);
+      }
+      setIsSyncingHistory(false);
+    };
+
+    doSync();
+  }, [dashboardId, messages, isSyncingHistory, failedSyncIds]);
 
   // Helper to determine if results can be charted (exactly two columns, one of which is numeric)
   const detectChartableData = (rows: Record<string, unknown>[]): ChatMessage["chartData"] | undefined => {
@@ -139,7 +199,7 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery }: ChatPanel
     // 1. Append User Message
     setMessages((prev) => [
       ...prev,
-      { id: userMsgId, role: "user", content: userQuestion },
+      { id: userMsgId, role: "user", content: userQuestion, synced: false },
     ]);
 
     let generatedSql = "";
@@ -225,6 +285,7 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery }: ChatPanel
           sql: generatedSql,
           results: queryResults as Record<string, unknown>[],
           chartData,
+          synced: false,
         },
       ]);
     } catch (err: unknown) {
@@ -238,6 +299,7 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery }: ChatPanel
           content: errMsg,
           sql: generatedSql || undefined,
           error: errMsg,
+          synced: false,
         },
       ]);
     } finally {
@@ -245,21 +307,63 @@ export default function ChatPanel({ datasetLoaded, schema, runQuery }: ChatPanel
     }
   };
 
+  // Sync Status Indicator Helper Component
+  const renderSyncIndicator = () => {
+    if (messages.length === 0) return null;
+
+    if (isSyncingHistory) {
+      return (
+        <div
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-blue-400"
+          title="Syncing conversation to cloud..."
+        >
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+          <span className="hidden sm:inline">Syncing...</span>
+        </div>
+      );
+    }
+
+    const hasUnsynced = !dashboardId || messages.some((m) => !m.synced && !failedSyncIds.includes(m.id));
+
+    if (hasUnsynced) {
+      return (
+        <div
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-gray-500"
+          title="Local-only (saves with dashboard)"
+        >
+          <CloudOff className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Local-only</span>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-gray-950/50 border border-gray-850 rounded-lg text-[10px] font-semibold text-emerald-500"
+        title="Synced to cloud"
+      >
+        <Cloud className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Synced</span>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-[#111827] border border-gray-800 rounded-xl overflow-hidden flex flex-col shadow-xl">
       {/* Header bar */}
       <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-surface/50">
-        <div className="flex items-center space-x-2.5">
-          <div className="bg-blue-500/15 p-1.5 rounded-lg border border-blue-500/20">
+        <div className="flex items-center space-x-2.5 pr-4 truncate">
+          <div className="bg-blue-500/15 p-1.5 rounded-lg border border-blue-500/20 flex-shrink-0">
             <Sparkles className="h-4 w-4 text-accent" />
           </div>
-          <div>
+          <div className="truncate">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Text-to-SQL Co-Pilot</h3>
-            <p className="text-[10px] text-gray-400 font-medium">Ask questions about your loaded spreadsheet using conversational language.</p>
+            <p className="text-[10px] text-gray-400 font-medium truncate">Ask questions about your loaded spreadsheet using conversational language.</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          {renderSyncIndicator()}
           {messages.length > 0 && (
             <button
               onClick={handleClearChat}
