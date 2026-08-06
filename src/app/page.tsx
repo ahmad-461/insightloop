@@ -52,6 +52,9 @@ export default function Home() {
   const [queryError, setQueryError] = useState<string | null>(null);
   const [queryRunning, setQueryRunning] = useState(false);
 
+  // Shared Dashboard ID state for Phase 7 Chat History Persistence
+  const [dashboardId, setDashboardId] = useState<string | null>(null);
+
   // UI Panels collapsing states
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false);
   const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(true);
@@ -524,6 +527,8 @@ export default function Home() {
               datasetLoaded={datasetLoaded}
               runQuery={runQuery}
               onDashboardLoaded={handleDashboardLoaded}
+              dashboardId={dashboardId}
+              setDashboardId={setDashboardId}
             />
           </div>
 
@@ -533,6 +538,7 @@ export default function Home() {
               datasetLoaded={datasetLoaded}
               schema={parsedData.schema}
               runQuery={runQuery}
+              dashboardId={dashboardId}
             />
           </div>
 
