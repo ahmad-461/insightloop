@@ -34,6 +34,7 @@ import {
 import { useDuckDB } from "@/context/DuckDBContext";
 import Dashboard from "@/components/Dashboard";
 import ChatPanel from "@/components/ChatPanel";
+import AdvancedInsights from "@/components/AdvancedInsights";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
@@ -524,6 +525,15 @@ export default function Home() {
               datasetLoaded={datasetLoaded}
               runQuery={runQuery}
               onDashboardLoaded={handleDashboardLoaded}
+            />
+          </div>
+
+          {/* 🧠 Python Advanced Insights Section */}
+          <div className="pt-4 border-t border-gray-800/60 space-y-4">
+            <AdvancedInsights
+              parsedData={parsedData}
+              datasetLoaded={datasetLoaded}
+              runQuery={runQuery}
             />
           </div>
 
