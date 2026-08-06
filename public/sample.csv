@@ -1,0 +1,11 @@
+Date,Revenue,Quantity,Region,Description,Duplicate,Duplicate,
+2024-01-01,$1050.50,15,East,Special product launch,Alpha,Beta,val
+2024-01-02,$980.00,12,West,Standard sale item,Alpha,Beta,val
+2024-01-03,$2300.25,30,East,Bulk purchase discount,Alpha,Beta,val
+2024-01-04,$450.00,5,North,Single unit transaction,Alpha,Beta,val
+2024-01-05,$150.00,2,South,Clearing clearance stock,Alpha,Beta,val
+2024-01-06,$1250.00,15,East,Weekend sales boost,Alpha,Beta,val
+2024-01-07,$920.00,10,West,Standard sale item,Alpha,Beta,val
+2024-01-08,$3200.00,45,East,Corporate bulk sale,Alpha,Beta,val
+2024-01-09,$410.00,4,North,Regular retail order,Alpha,Beta,val
+2024-01-10,$600.00,8,South,Midweek special promotion,Alpha,Beta,val
