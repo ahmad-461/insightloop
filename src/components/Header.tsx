@@ -17,17 +17,15 @@ export default function Header() {
 
   // Sync scroll state to trigger glassmorphism nav
   useEffect(() => {
-    if (pathname === "/") return;
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 15);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [pathname]);
+  }, []);
 
   // Sync theme state on mount
   useEffect(() => {
-    if (pathname === "/") return;
     if (typeof window !== "undefined") {
       const isDark = document.documentElement.classList.contains("dark");
       setTheme(isDark ? "dark" : "light");
@@ -48,18 +46,16 @@ export default function Header() {
 
   // Check prefers-reduced-motion
   useEffect(() => {
-    if (pathname === "/") return;
     if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mediaQuery.matches);
     const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
     mediaQuery.addEventListener("change", listener);
     return () => mediaQuery.removeEventListener("change", listener);
-  }, [pathname]);
+  }, []);
 
   // Close drawer on escape key
   useEffect(() => {
-    if (pathname === "/") return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsDrawerOpen(false);
@@ -75,14 +71,7 @@ export default function Header() {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isDrawerOpen, pathname]);
-
-  // The OS/terminal menu bar is exclusive to the homepage.
-  // We keep the traditional header everywhere else.
-  if (pathname === "/") {
-    return null;
-  }
-
+  }, [isDrawerOpen]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     if (pathname === "/") {
@@ -91,6 +80,8 @@ export default function Header() {
       if (el) {
         el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
       }
+    } else {
+      // If we are on another page, let default link action navigate to "/#target-id" or similar
     }
     setIsDrawerOpen(false);
   };
@@ -202,6 +193,16 @@ export default function Header() {
               className="relative py-1.5 px-3.5 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-md group"
             >
               <span>About</span>
+              <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] bg-accent transition-all duration-300 ease-out group-hover:w-3/4 w-0" />
+            </Link>
+
+            {/* Pricing / Open link */}
+            <Link
+              href="/#pricing"
+              onClick={(e) => handleNavClick(e, "pricing")}
+              className="relative py-1.5 px-3.5 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-md group"
+            >
+              <span>Pricing</span>
               <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] bg-accent transition-all duration-300 ease-out group-hover:w-3/4 w-0" />
             </Link>
           </nav>
@@ -326,6 +327,14 @@ export default function Header() {
                   className="flex items-center justify-between p-2.5 rounded-lg text-muted hover:text-foreground transition border border-transparent hover:bg-surface-subtle/40"
                 >
                   <span>About</span>
+                </Link>
+
+                <Link
+                  href="/#pricing"
+                  onClick={(e) => handleNavClick(e, "pricing")}
+                  className="flex items-center justify-between p-2.5 rounded-lg text-muted hover:text-foreground transition border border-transparent hover:bg-surface-subtle/40"
+                >
+                  <span>Pricing</span>
                 </Link>
               </nav>
 
