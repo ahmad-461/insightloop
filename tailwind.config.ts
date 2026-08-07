@@ -6,30 +6,36 @@ export default {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-plus-jakarta-sans)", "sans-serif"],
-        display: ["var(--font-space-grotesk)", "sans-serif"],
+        sans: ["var(--font-inter)", "sans-serif"],
+        display: ["var(--font-inter)", "sans-serif"],
       },
       colors: {
-        // Core hex palette for dark theme (never using oklch, lab, color-mix, etc.)
-        background: "#080d1a",
-        surface: "#0f172a",
-        "surface-light": "#121b2e",
-        accent: "#2563eb",
-        "accent-light": "#3b82f6",
-        secondary: "#06b6d4",
-        "secondary-light": "#0ea5e9",
-        success: "#10b981",
-        warning: "#eab308",
-        foreground: "#f8fafc",
-        muted: "#94a3b8",
+        background: "var(--bg)",
+        surface: "var(--surface)",
+        "surface-subtle": "var(--surface-subtle)",
+        "surface-hover": "var(--surface-hover)",
+        border: "var(--border)",
+        foreground: "var(--text-primary)",
+        muted: "var(--text-secondary)",
+        accent: "var(--accent)",
+        success: "var(--success)",
+        warning: "var(--warning)",
+
+        // Aliases to seamlessly support old styling classes with the new premium design values:
+        "surface-light": "var(--surface-subtle)",
+        "accent-light": "var(--accent)",
+        secondary: "var(--accent)",
+        "secondary-light": "var(--accent)",
       },
       boxShadow: {
-        // Subtle cyber-glow shadows for professional glassmorphic surfaces
-        "glow-accent": "0 0 15px -3px rgba(37, 99, 235, 0.25)",
-        "glow-secondary": "0 0 15px -3px rgba(6, 182, 212, 0.25)",
+        // Soft low-opacity shadow matching the premium minimal design (no glows/heavy gradients)
+        "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        "md": "0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02)",
+        "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.02)",
       }
     },
   },

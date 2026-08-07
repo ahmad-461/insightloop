@@ -541,12 +541,10 @@ export default function Dashboard({
       const sessionId = getOrCreateSessionId();
       const titleToSave = saveTitle.trim() || parsedData.fileName;
 
-      // Verify Supabase env keys exist
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
         throw new Error("Supabase connection parameters are not fully set in the workspace. Please make sure variables are configured.");
       }
 
-      // Structured dataset summary
       const datasetSummaryPayload = {
         totalRows: parsedData.rawRows.length,
         schema: parsedData.schema
@@ -554,7 +552,6 @@ export default function Dashboard({
 
       let resData;
       if (dashboardId) {
-        // Update existing dashboard
         const { data, error: supabaseError } = await supabase
           .from("dashboards")
           .update({
@@ -570,7 +567,6 @@ export default function Dashboard({
         }
         resData = data;
       } else {
-        // Insert new dashboard
         const { data, error: supabaseError } = await supabase
           .from("dashboards")
           .insert([
@@ -605,15 +601,14 @@ export default function Dashboard({
 
   // Open Save Modal and pre-fill title
   const triggerSaveModal = () => {
-    // Strip file extensions for cleaner titles
     const cleanFileName = parsedData.fileName.replace(/\.(csv|xlsx|xls)$/i, "");
     setSaveTitle(cleanFileName);
     setSaveError(null);
-    setSaveSuccessId(dashboardId); // Use shared dashboard ID if exists
+    setSaveSuccessId(dashboardId);
     setShowSaveModal(true);
   };
 
-  // High-fidelity PDF export logic using jsPDF + html2canvas
+  // High-fidelity PDF export logic
   const handleExportPDF = async () => {
     if (widgets.length === 0) return;
     setExportingPdf(true);
@@ -626,18 +621,19 @@ export default function Dashboard({
         throw new Error("Widgets container not found.");
       }
 
-      // Capture element with high-fidelity scaling
+      const isDarkModeActive = document.documentElement.classList.contains("dark");
+
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: "#080d1a",
+        backgroundColor: isDarkModeActive ? "#0a0a0a" : "#ffffff",
         useCORS: true,
         logging: false,
       });
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
+      const imgWidth = 210;
+      const pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
@@ -665,21 +661,20 @@ export default function Dashboard({
   // Standard loading skeleton
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
+      <div className="space-y-4 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, idx) => (
-            <div key={idx} className="bg-surface border border-surface-light p-5 rounded-2xl space-y-3">
-              <div className="h-4 w-24 bg-surface-light rounded"></div>
-              <div className="h-8 w-32 bg-surface-light rounded"></div>
-              <div className="h-3 w-44 bg-surface-light rounded pt-2"></div>
+            <div key={idx} className="bg-surface border border-border p-5 rounded-lg space-y-3">
+              <div className="h-4 w-24 bg-surface-subtle rounded"></div>
+              <div className="h-8 w-32 bg-surface-subtle rounded"></div>
             </div>
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[...Array(2)].map((_, idx) => (
-            <div key={idx} className="bg-surface border border-surface-light p-6 rounded-2xl space-y-4">
-              <div className="h-5 w-48 bg-surface-light rounded"></div>
-              <div className="h-64 w-full bg-surface-light/40 rounded"></div>
+            <div key={idx} className="bg-surface border border-border p-6 rounded-lg space-y-4">
+              <div className="h-5 w-48 bg-surface-subtle rounded"></div>
+              <div className="h-60 w-full bg-surface-subtle/40 rounded"></div>
             </div>
           ))}
         </div>
@@ -689,10 +684,10 @@ export default function Dashboard({
 
   if (error) {
     return (
-      <div className="flex items-start space-x-3 p-5 bg-rose-950/20 border border-rose-900/30 rounded-2xl">
-        <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5 flex-shrink-0" />
+      <div className="flex items-start space-x-2.5 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+        <AlertCircle className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-rose-400">Dashboard Generation Error</p>
+          <p className="text-xs font-bold text-rose-600">Dashboard Generation Error</p>
           <p className="text-xs text-muted leading-relaxed font-mono">{error}</p>
         </div>
       </div>
@@ -700,13 +695,13 @@ export default function Dashboard({
   }
 
   return (
-    <div className="space-y-8 animate-fade-in font-sans">
+    <div className="space-y-6 animate-fade-in font-sans">
 
       {/* 🛠 Dashboard Toolbar */}
-      <div className="bg-surface border border-surface-light p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-glow-accent">
+      <div className="bg-surface border border-border p-4 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <Sparkles className="h-4 w-4 text-secondary-light animate-pulse" />
-          <span className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Dashboard Controls</span>
+          <Sparkles className="h-4 w-4 text-accent" />
+          <span className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Dashboard Controls</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -716,10 +711,10 @@ export default function Dashboard({
               setShowAddForm(!showAddForm);
               setNewType("kpi");
             }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
               showAddForm
-                ? "bg-surface-light border-surface-light text-white"
-                : "bg-secondary/10 text-secondary-light border-secondary/20 hover:bg-secondary/20 hover:border-secondary-light/40 shadow-glow-secondary"
+                ? "bg-surface-subtle border-border text-foreground"
+                : "bg-surface border-border hover:bg-surface-subtle text-foreground"
             }`}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -729,7 +724,7 @@ export default function Dashboard({
           {/* Reset to Defaults */}
           <button
             onClick={initializeDashboardWidgets}
-            className="flex items-center space-x-2 px-4 py-2 bg-background hover:bg-surface-light text-muted hover:text-white border border-surface-light rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-surface hover:bg-surface-subtle text-muted hover:text-foreground border border-border rounded-lg text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             title="Restore original charts & KPI cards"
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -739,7 +734,7 @@ export default function Dashboard({
           {/* Save Dashboard */}
           <button
             onClick={triggerSaveModal}
-            className="flex items-center space-x-2 px-4.5 py-2 bg-accent hover:bg-accent-light text-white rounded-xl text-xs font-extrabold shadow-glow-accent hover:shadow-glow-secondary transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-accent hover:opacity-90 active:scale-95 text-white rounded-lg text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Save className="h-3.5 w-3.5" />
             <span>Save Dashboard</span>
@@ -749,7 +744,7 @@ export default function Dashboard({
           <button
             onClick={handleExportPDF}
             disabled={exportingPdf || widgets.length === 0}
-            className="flex items-center space-x-2 px-4.5 py-2 bg-secondary/10 hover:bg-secondary/20 text-secondary-light disabled:opacity-40 border border-secondary/20 hover:border-secondary-light/40 rounded-xl text-xs font-extrabold shadow-glow-secondary transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-surface hover:bg-surface-subtle disabled:opacity-45 text-foreground border border-border rounded-lg text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             {exportingPdf ? (
               <>
@@ -768,59 +763,57 @@ export default function Dashboard({
 
       {/* ➕ "Add Custom Widget" Sliding Panel */}
       {showAddForm && (
-        <div className="bg-surface border border-surface-light p-6 rounded-2xl space-y-5 animate-fade-in relative shadow-glow-secondary">
+        <div className="bg-surface border border-border p-5 rounded-lg space-y-4 animate-fade-in relative">
           <button
             onClick={() => setShowAddForm(false)}
-            className="absolute top-4 right-4 text-muted hover:text-white transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded p-1"
+            className="absolute top-4 right-4 text-muted hover:text-foreground transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded p-1"
           >
             <X className="h-4 w-4" />
           </button>
 
           <div>
-            <h3 className="font-display text-sm font-extrabold text-white uppercase tracking-wider">Configure Custom Widget</h3>
-            <p className="text-xs text-muted mt-1 font-semibold">Specify layout configuration and aggregates to construct a new chart or KPI card.</p>
+            <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Configure Custom Widget</h3>
+            <p className="text-[10px] text-muted mt-1 font-normal">Specify layout configuration and aggregates to construct a new chart or KPI card.</p>
           </div>
 
           {/* Tabs for Widget Type */}
-          <div className="grid grid-cols-3 gap-2 border-b border-surface-light pb-4">
+          <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
             {(["kpi", "line", "bar"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setNewType(t)}
-                className={`py-2 px-4 rounded-xl text-xs font-extrabold border transition-all duration-350 uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none ${
+                className={`py-1.5 px-3 rounded-lg text-xs font-medium border transition-colors uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
                   newType === t
-                    ? "bg-accent border-accent text-white shadow-glow-accent"
-                    : "bg-background border-surface-light text-muted hover:text-white"
+                    ? "bg-accent border-accent text-white"
+                    : "bg-background border-border text-muted hover:text-foreground"
                 }`}
               >
-                {t === "kpi" ? "🔢 KPI Card" : t === "line" ? "📈 Line Chart" : "📊 Bar Chart"}
+                {t === "kpi" ? "🔢 KPI Card" : t === "line" ? "📈 Line" : "📊 Bar"}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleAddWidget} className="space-y-4 text-xs font-medium">
-            {/* Custom Optional Title */}
-            <div className="flex flex-col space-y-1.5">
+          <form onSubmit={handleAddWidget} className="space-y-4 text-xs font-normal">
+            <div className="flex flex-col space-y-1">
               <label className="font-bold text-muted">Custom Title (Optional)</label>
               <input
                 type="text"
                 placeholder="Leave blank for auto-generated title"
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
-                className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary font-bold text-xs placeholder-muted/35 focus-visible:ring-2 focus-visible:ring-secondary/20"
+                className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent text-xs placeholder-muted/30 focus-visible:ring-2 focus-visible:ring-accent/20"
               />
             </div>
 
-            {/* 1. KPI Options */}
             {newType === "kpi" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col space-y-1.5">
+                <div className="flex flex-col space-y-1">
                   <label className="font-bold text-muted">Select Column</label>
                   <select
                     value={kpiCol}
                     onChange={(e) => setKpiCol(e.target.value)}
-                    className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                    className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     <option value="row_count">📝 Dataset Row Count (Standard COUNT)</option>
                     {numCols.map((col) => (
@@ -831,13 +824,13 @@ export default function Dashboard({
                   </select>
                 </div>
 
-                <div className="flex flex-col space-y-1.5">
+                <div className="flex flex-col space-y-1">
                   <label className="font-bold text-muted">Aggregation Method</label>
                   <select
                     value={kpiAgg}
                     disabled={kpiCol === "row_count"}
                     onChange={(e) => setKpiAgg(e.target.value as "SUM" | "AVG" | "MIN" | "MAX" | "COUNT")}
-                    className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                    className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     <option value="SUM">SUM (Total Aggregate)</option>
                     <option value="AVG">AVG (Average)</option>
@@ -849,22 +842,20 @@ export default function Dashboard({
               </div>
             )}
 
-            {/* 2. Line Chart Options */}
             {newType === "line" && (
               <div className="space-y-4">
                 {dateCols.length === 0 || numCols.length === 0 ? (
-                  <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl text-warning leading-relaxed font-bold">
+                  <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg text-warning leading-relaxed">
                     Line charts require at least <strong>1 Date column</strong> and <strong>1 Numeric/Currency column</strong>.
-                    Please change your column types in the preview panel above if necessary.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-1">
                       <label className="font-bold text-muted">Date Dimension</label>
                       <select
                         value={lineDateCol}
                         onChange={(e) => setLineDateCol(e.target.value)}
-                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                        className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         {dateCols.map((col) => (
                           <option key={col.columnName} value={col.columnName}>
@@ -874,12 +865,12 @@ export default function Dashboard({
                       </select>
                     </div>
 
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-1">
                       <label className="font-bold text-muted">Metric Value</label>
                       <select
                         value={lineMetricCol}
                         onChange={(e) => setLineMetricCol(e.target.value)}
-                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                        className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         {numCols.map((col) => (
                           <option key={col.columnName} value={col.columnName}>
@@ -889,24 +880,24 @@ export default function Dashboard({
                       </select>
                     </div>
 
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-1">
                       <label className="font-bold text-muted">Trend Aggregation</label>
                       <select
                         value={lineAgg}
                         onChange={(e) => setLineAgg(e.target.value as "SUM" | "AVG")}
-                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                        className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         <option value="SUM">SUM (Total over time)</option>
                         <option value="AVG">AVG (Average over time)</option>
                       </select>
                     </div>
 
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-1">
                       <label className="font-bold text-muted">Time Bucket Granularity</label>
                       <select
                         value={lineGran}
                         onChange={(e) => setLineGran(e.target.value as "daily" | "monthly")}
-                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                        className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         <option value="daily">📅 Daily Buckets</option>
                         <option value="monthly">📆 Monthly Buckets</option>
@@ -917,22 +908,20 @@ export default function Dashboard({
               </div>
             )}
 
-            {/* 3. Bar Chart Options */}
             {newType === "bar" && (
               <div className="space-y-4">
                 {catCols.length === 0 ? (
-                  <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl text-warning leading-relaxed font-bold">
+                  <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg text-warning leading-relaxed">
                     Bar charts require at least <strong>1 Category column</strong>.
-                    Please change your column types in the preview panel above if necessary.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-1">
                       <label className="font-bold text-muted">Category Dimension</label>
                       <select
                         value={barCatCol}
                         onChange={(e) => setBarCatCol(e.target.value)}
-                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                        className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         {catCols.map((col) => (
                           <option key={col.columnName} value={col.columnName}>
@@ -942,12 +931,12 @@ export default function Dashboard({
                       </select>
                     </div>
 
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-1">
                       <label className="font-bold text-muted">Aggregate Metric</label>
                       <select
                         value={barMetricCol}
                         onChange={(e) => setBarMetricCol(e.target.value)}
-                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                        className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         <option value="row_count">📝 Row Count (Frequency of Categories)</option>
                         {numCols.map((col) => (
@@ -958,13 +947,13 @@ export default function Dashboard({
                       </select>
                     </div>
 
-                    <div className="flex flex-col space-y-1.5">
+                    <div className="flex flex-col space-y-1">
                       <label className="font-bold text-muted">Aggregation Method</label>
                       <select
                         value={barAgg}
                         disabled={!barMetricCol || barMetricCol === "row_count"}
                         onChange={(e) => setBarAgg(e.target.value as "SUM" | "COUNT")}
-                        className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs font-bold focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                        className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                       >
                         <option value="SUM">SUM (Total Metric SUM)</option>
                         <option value="COUNT">COUNT (Count of records)</option>
@@ -975,7 +964,6 @@ export default function Dashboard({
               </div>
             )}
 
-            {/* Submit Action */}
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
@@ -983,7 +971,7 @@ export default function Dashboard({
                   (newType === "line" && (dateCols.length === 0 || numCols.length === 0)) ||
                   (newType === "bar" && catCols.length === 0)
                 }
-                className="flex items-center space-x-2 px-6 py-3 bg-accent hover:bg-accent-light disabled:bg-surface-light/40 disabled:text-muted/40 text-white font-extrabold rounded-xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-glow-accent"
+                className="flex items-center space-x-1.5 px-4 py-2 bg-accent hover:opacity-90 disabled:opacity-40 text-white font-medium rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <Plus className="h-4 w-4" />
                 <span>Create Widget</span>
@@ -995,10 +983,10 @@ export default function Dashboard({
 
       {/* 🚀 Active Layout Widgets Render Grid */}
       {widgets.length === 0 ? (
-        <div className="text-center py-16 px-6 bg-surface border border-surface-light rounded-2xl space-y-4">
-          <Sparkles className="h-10 w-10 text-muted/30 mx-auto animate-pulse" />
-          <h3 className="font-display text-base font-bold text-white">Your dashboard is empty</h3>
-          <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed font-semibold">
+        <div className="text-center py-12 px-6 bg-surface border border-border rounded-lg space-y-3">
+          <Sparkles className="h-8 w-8 text-muted/30 mx-auto" />
+          <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Your dashboard is empty</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
             All widgets were removed. Click &quot;Add Custom Widget&quot; to manually customize your layout or click &quot;Reset to Defaults&quot; to restore automatic configurations.
           </p>
         </div>
@@ -1017,23 +1005,23 @@ export default function Dashboard({
             return (
               <div
                 key={widget.id}
-                className={`${gridColSpan} bg-surface border border-surface-light rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden group hover:border-accent-light/40 hover:shadow-glow-accent transition-all duration-300 p-5 h-full`}
-                style={{ minHeight: isKpi ? "170px" : "370px" }}
+                className={`${gridColSpan} bg-surface border border-border rounded-lg flex flex-col justify-between relative overflow-hidden group hover:border-text-secondary transition-all p-5 h-full`}
+                style={{ minHeight: isKpi ? "150px" : "350px" }}
               >
                 {/* Header Action Row */}
-                <div className="flex items-start justify-between border-b border-surface-light pb-3 mb-4">
+                <div className="flex items-start justify-between border-b border-border pb-3 mb-4">
                   <div className="flex items-center space-x-2 truncate pr-2">
-                    {widget.type === "line" && <TrendingUp className="h-4 w-4 text-accent-light" />}
-                    {widget.type === "bar" && <BarChart3 className="h-4 w-4 text-success" />}
+                    {widget.type === "line" && <TrendingUp className="h-4 w-4 text-accent" />}
+                    {widget.type === "bar" && <BarChart3 className="h-4 w-4 text-accent" />}
                     {isKpi && (
                       widget.metadata.metricType === "currency" ? (
-                        <DollarSign className="h-4 w-4 text-warning" />
+                        <DollarSign className="h-4 w-4 text-accent" />
                       ) : (
-                        <Hash className="h-4 w-4 text-secondary-light" />
+                        <Hash className="h-4 w-4 text-accent" />
                       )
                     )}
                     <h3
-                      className="font-display text-xs font-extrabold text-white tracking-wide uppercase truncate max-w-[150px] sm:max-w-[200px]"
+                      className="font-sans text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[150px] sm:max-w-[200px]"
                       title={widget.title}
                     >
                       {widget.title}
@@ -1041,13 +1029,13 @@ export default function Dashboard({
                   </div>
 
                   {/* Move up / Move down / Delete Action Buttons */}
-                  <div data-html2canvas-ignore="true" className="flex items-center space-x-0.5 flex-shrink-0 bg-background/50 border border-surface-light p-1 rounded-lg">
+                  <div data-html2canvas-ignore="true" className="flex items-center space-x-0.5 flex-shrink-0 bg-background border border-border p-1 rounded-lg">
                     <button
                       type="button"
                       onClick={() => moveWidget(index, "up")}
                       disabled={index === 0}
                       title="Move Up"
-                      className="p-1 text-muted hover:text-white hover:bg-surface-light rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                      className="p-1 text-muted hover:text-foreground hover:bg-surface rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
                     >
                       <ChevronUp className="h-3.5 w-3.5" />
                     </button>
@@ -1056,16 +1044,16 @@ export default function Dashboard({
                       onClick={() => moveWidget(index, "down")}
                       disabled={index === widgets.length - 1}
                       title="Move Down"
-                      className="p-1 text-muted hover:text-white hover:bg-surface-light rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                      className="p-1 text-muted hover:text-foreground hover:bg-surface rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
                     >
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
-                    <div className="w-[1px] h-3.5 bg-surface-light mx-1" />
+                    <div className="w-[1px] h-3.5 bg-border mx-1" />
                     <button
                       type="button"
                       onClick={() => removeWidget(widget.id)}
                       title="Remove Widget"
-                      className="p-1 text-muted hover:text-rose-400 hover:bg-rose-950/40 rounded-md transition"
+                      className="p-1 text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -1076,9 +1064,9 @@ export default function Dashboard({
                 <div className="flex-1 flex flex-col justify-center">
                   {/* Error State */}
                   {errorMsg && (
-                    <div className="flex items-start space-x-2 text-rose-500 p-2 bg-rose-950/10 border border-rose-950/20 rounded-xl">
+                    <div className="flex items-start space-x-2 text-rose-500 p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span className="text-[10px] font-bold leading-relaxed font-mono truncate max-w-[240px]" title={errorMsg}>
+                      <span className="text-[10px] font-semibold leading-relaxed font-mono truncate max-w-[240px]" title={errorMsg}>
                         {errorMsg}
                       </span>
                     </div>
@@ -1087,14 +1075,14 @@ export default function Dashboard({
                   {/* Loading State */}
                   {isWidgetLoading && (
                     <div className="flex items-center justify-center space-x-2 py-4">
-                      <RefreshCw className="h-4 w-4 text-secondary animate-spin" />
-                      <span className="text-[10px] text-muted font-extrabold uppercase tracking-wider">Querying DuckDB...</span>
+                      <RefreshCw className="h-4 w-4 text-accent animate-spin" />
+                      <span className="text-[10px] text-muted font-bold uppercase tracking-wider">Querying DuckDB...</span>
                     </div>
                   )}
 
                   {/* No Data State */}
                   {!isWidgetLoading && !errorMsg && (!data || data.length === 0) && (
-                    <div className="text-center text-muted italic text-[11px] py-4 font-semibold">
+                    <div className="text-center text-muted italic text-[11px] py-4">
                       No results returned.
                     </div>
                   )}
@@ -1127,14 +1115,14 @@ export default function Dashboard({
                         return (
                           <div className="flex flex-col justify-between h-full">
                             <div>
-                              <span className="text-3xl font-extrabold text-white block tracking-tight truncate font-display">
+                              <span className="text-3xl font-extrabold text-foreground block tracking-tight truncate">
                                 {formatNumber(mainVal, metricType, sym)}
                               </span>
                             </div>
 
                             {/* Sub-aggregates details */}
                             {hasSubMetrics && widget.id !== "kpi_total_rows" && (
-                              <div className="grid grid-cols-3 gap-1.5 text-[9px] text-muted font-bold mt-4 pt-2.5 border-t border-surface-light">
+                              <div className="grid grid-cols-3 gap-1.5 text-[9px] text-muted font-medium mt-4 pt-2.5 border-t border-border">
                                 <div>
                                   <span className="text-muted/60 block uppercase tracking-wide text-[8px]">Average</span>
                                   <span className="truncate block mt-0.5 text-foreground" title={formatNumber(row.a as number, metricType, sym)}>
@@ -1157,7 +1145,7 @@ export default function Dashboard({
                             )}
 
                             {!hasSubMetrics && (
-                              <div className="text-[10px] text-muted font-bold mt-3 pt-2.5 border-t border-surface-light">
+                              <div className="text-[10px] text-muted mt-3 pt-2.5 border-t border-border">
                                 Aggregation Method: {widget.metadata.aggregation || "COUNT"}
                               </div>
                             )}
@@ -1173,28 +1161,28 @@ export default function Dashboard({
                         const displayName = parsedData.schema.find(c => c.columnName === colName)?.displayName || colName;
 
                         return (
-                          <div className="h-64 w-full text-[10px] mt-2 select-none">
+                          <div className="h-60 w-full text-[10px] mt-2 select-none">
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#121b2e" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                                 <XAxis
                                   dataKey="date_bucket"
-                                  stroke="#94a3b8"
+                                  stroke="var(--text-secondary)"
                                   tickLine={false}
                                   axisLine={false}
                                   dy={8}
                                 />
                                 <YAxis
-                                  stroke="#94a3b8"
+                                  stroke="var(--text-secondary)"
                                   tickLine={false}
                                   axisLine={false}
                                   width={80}
                                   tickFormatter={(v) => formatNumber(v, isCurrency ? "currency" : "number", sym)}
                                 />
                                 <Tooltip
-                                  contentStyle={{ backgroundColor: "#0f172a", borderColor: "#121b2e", borderRadius: "12px" }}
-                                  itemStyle={{ color: "#f8fafc" }}
-                                  labelStyle={{ color: "#94a3b8", fontWeight: "bold" }}
+                                  contentStyle={{ backgroundColor: "var(--surface)", borderColor: "var(--border)", borderRadius: "6px" }}
+                                  itemStyle={{ color: "var(--text-primary)" }}
+                                  labelStyle={{ color: "var(--text-secondary)", fontWeight: "500" }}
                                   formatter={(value) => [formatNumber(value as number, isCurrency ? "currency" : "number", sym), displayName]}
                                 />
                                 <Legend verticalAlign="top" height={36} iconType="circle" />
@@ -1202,10 +1190,10 @@ export default function Dashboard({
                                   type="monotone"
                                   dataKey="total_val"
                                   name={displayName}
-                                  stroke="#3b82f6"
-                                  strokeWidth={2.5}
-                                  activeDot={{ r: 6 }}
-                                  dot={{ r: 3, strokeWidth: 1.5 }}
+                                  stroke="var(--accent)"
+                                  strokeWidth={2}
+                                  activeDot={{ r: 5 }}
+                                  dot={{ r: 2, strokeWidth: 1.5 }}
                                 />
                               </LineChart>
                             </ResponsiveContainer>
@@ -1224,37 +1212,37 @@ export default function Dashboard({
                         const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
 
                         return (
-                          <div className="h-64 w-full text-[10px] mt-2 select-none">
+                          <div className="h-60 w-full text-[10px] mt-2 select-none">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#121b2e" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                                 <XAxis
                                   dataKey="category"
-                                  stroke="#94a3b8"
+                                  stroke="var(--text-secondary)"
                                   tickLine={false}
                                   axisLine={false}
                                   dy={8}
                                   tickFormatter={(v) => (String(v).length > 12 ? `${String(v).slice(0, 10)}...` : String(v))}
                                 />
                                 <YAxis
-                                  stroke="#94a3b8"
+                                  stroke="var(--text-secondary)"
                                   tickLine={false}
                                   axisLine={false}
                                   width={80}
                                   tickFormatter={(v) => formatNumber(v, metricType, sym)}
                                 />
                                 <Tooltip
-                                  contentStyle={{ backgroundColor: "#0f172a", borderColor: "#121b2e", borderRadius: "12px" }}
-                                  itemStyle={{ color: "#f8fafc" }}
-                                  labelStyle={{ color: "#94a3b8", fontWeight: "bold" }}
+                                  contentStyle={{ backgroundColor: "var(--surface)", borderColor: "var(--border)", borderRadius: "6px" }}
+                                  itemStyle={{ color: "var(--text-primary)" }}
+                                  labelStyle={{ color: "var(--text-secondary)", fontWeight: "500" }}
                                   formatter={(value) => [formatNumber(value as number, metricType, sym), metricName]}
                                 />
                                 <Legend verticalAlign="top" height={36} iconType="circle" />
                                 <Bar
                                   dataKey="val"
                                   name={metricName}
-                                  fill="#10b981"
-                                  radius={[4, 4, 0, 0]}
+                                  fill="var(--accent)"
+                                  radius={[2, 2, 0, 0]}
                                 />
                               </BarChart>
                             </ResponsiveContainer>
@@ -1272,38 +1260,38 @@ export default function Dashboard({
 
       {/* 💾 Save Dashboard Modal Dialog */}
       {showSaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in backdrop-blur-sm">
-          <div className="bg-surface border border-surface-light rounded-2xl p-6 w-full max-w-md shadow-2xl relative space-y-5 animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in">
+          <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-md relative space-y-4 shadow-lg">
             <button
               onClick={() => setShowSaveModal(false)}
               disabled={saving}
-              className="absolute top-4 right-4 text-muted hover:text-white disabled:opacity-30 transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded p-1"
+              className="absolute top-4 right-4 text-muted hover:text-foreground disabled:opacity-30 transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded p-1"
             >
               <X className="h-4 w-4" />
             </button>
 
-            {/* Success Confirmation Screen */}
+            {/* Success Screen */}
             {saveSuccessId ? (
-              <div className="text-center py-4 space-y-4">
-                <div className="h-12 w-12 bg-success/10 border border-success/20 text-success rounded-full flex items-center justify-center mx-auto shadow-glow-secondary">
-                  <CheckCircle2 className="h-6 w-6" />
+              <div className="text-center py-2 space-y-3">
+                <div className="h-10 w-10 bg-success/10 border border-success/20 text-success rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="font-display text-base font-extrabold text-white">Dashboard Saved Successfully!</h3>
-                  <p className="text-xs text-muted px-4 leading-relaxed font-semibold">
+                  <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Dashboard Saved!</h3>
+                  <p className="text-xs text-muted leading-relaxed">
                     Your layout and column definitions have been persisted under session ID cookie.
                   </p>
                 </div>
 
-                <div className="bg-background border border-surface-light p-3.5 rounded-xl space-y-1 text-[11px] font-mono select-all">
-                  <span className="text-muted/60 block text-[9px] font-bold uppercase tracking-wider font-sans mb-1">Generated Dashboard ID</span>
-                  <span className="text-secondary-light font-bold block">{saveSuccessId}</span>
+                <div className="bg-background border border-border p-3 rounded-lg space-y-1 text-[10px] font-mono select-all">
+                  <span className="text-muted block text-[8px] font-bold uppercase tracking-wider mb-1">Dashboard ID</span>
+                  <span className="text-accent font-bold block">{saveSuccessId}</span>
                 </div>
 
-                <div className="pt-3">
+                <div className="pt-2">
                   <button
                     onClick={() => setShowSaveModal(false)}
-                    className="w-full py-2.5 bg-surface-light hover:bg-surface text-white rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                    className="w-full py-2 bg-surface hover:bg-surface-subtle text-foreground rounded-lg text-xs font-medium border border-border transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     Close Dialog
                   </button>
@@ -1313,36 +1301,36 @@ export default function Dashboard({
               /* Name Form Screen */
               <div className="space-y-4 font-sans">
                 <div>
-                  <h3 className="font-display text-base font-extrabold text-white">Save Dashboard to Database</h3>
-                  <p className="text-xs text-muted mt-1 font-semibold">Provide a name to revisit your customized layout and schema later.</p>
+                  <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Save Dashboard</h3>
+                  <p className="text-xs text-muted mt-1 font-normal">Provide a name to revisit your customized layout and schema later.</p>
                 </div>
 
                 <div className="flex flex-col space-y-1.5 text-xs">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Dashboard Title</label>
+                  <label className="text-[9px] font-bold uppercase tracking-wider text-muted font-sans">Dashboard Title</label>
                   <input
                     type="text"
                     value={saveTitle}
                     onChange={(e) => setSaveTitle(e.target.value)}
                     placeholder="Enter dashboard name"
                     disabled={saving}
-                    className="bg-background border border-surface-light rounded-xl p-3 text-white outline-none focus:border-secondary text-xs placeholder-muted/30 font-bold focus-visible:ring-2 focus-visible:ring-secondary/20"
+                    className="bg-background border border-border rounded-lg p-2.5 text-foreground outline-none focus:border-accent text-xs placeholder-muted/30 focus-visible:ring-2 focus-visible:ring-accent/20"
                     maxLength={100}
                   />
                 </div>
 
                 {saveError && (
-                  <div className="flex items-start space-x-2 text-rose-400 p-3 bg-rose-950/20 border border-rose-900/30 rounded-xl text-xs font-mono">
+                  <div className="flex items-start space-x-2 text-rose-500 p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs font-mono">
                     <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <span>{saveError}</span>
                   </div>
                 )}
 
-                <div className="flex justify-end space-x-2.5 pt-2">
+                <div className="flex justify-end space-x-2 pt-2">
                   <button
                     type="button"
                     disabled={saving}
                     onClick={() => setShowSaveModal(false)}
-                    className="px-4 py-2.5 bg-background border border-surface-light hover:bg-surface-light text-muted hover:text-white rounded-xl text-xs font-bold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                    className="px-3.5 py-1.5 bg-background border border-border hover:bg-surface-subtle text-muted hover:text-foreground rounded-lg text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     Cancel
                   </button>
@@ -1350,7 +1338,7 @@ export default function Dashboard({
                     type="button"
                     disabled={saving}
                     onClick={handleSaveDashboard}
-                    className="flex items-center space-x-1.5 px-5 py-2.5 bg-accent hover:bg-accent-light disabled:bg-surface-light text-white rounded-xl text-xs font-extrabold transition-all duration-300 shadow-glow-accent hover:shadow-glow-secondary focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                    className="flex items-center space-x-1 px-4 py-1.5 bg-accent hover:opacity-90 disabled:opacity-40 text-white rounded-lg text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     {saving ? (
                       <>

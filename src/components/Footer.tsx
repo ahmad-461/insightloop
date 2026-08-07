@@ -1,37 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
-import { BarChart3, Mail, Globe, ArrowUpRight, Sparkles, Database } from "lucide-react";
+import { Mail, Globe, ArrowUpRight, Sparkles, Database, BarChart3 } from "lucide-react";
 
 export default function Footer() {
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  // Check prefers-reduced-motion
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mediaQuery.matches);
-    const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mediaQuery.addEventListener("change", listener);
-    return () => mediaQuery.removeEventListener("change", listener);
-  }, []);
-
-  const handleScrollToWorks = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // Only smooth scroll if on homepage
-    if (window.location.pathname === "/") {
-      e.preventDefault();
-      const el = document.getElementById("how-it-works");
-      if (el) {
-        el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
-      }
-    }
-  };
-
   const techBadges = [
     {
       name: "Next.js",
-      color: "text-white",
+      color: "text-foreground",
       icon: (
         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="1.5">
           <circle cx="12" cy="12" r="10" />
@@ -42,10 +19,10 @@ export default function Footer() {
     },
     {
       name: "TypeScript",
-      color: "text-blue-400",
+      color: "text-accent",
       icon: (
         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5">
-          <rect x="3" y="3" width="18" height="18" rx="2" fill="#0f172a" stroke="currentColor" strokeWidth="1.5" />
+          <rect x="3" y="3" width="18" height="18" rx="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1.5" />
           <text x="6" y="15" fill="currentColor" fontSize="10" fontWeight="bold" fontFamily="monospace">
             TS
           </text>
@@ -54,72 +31,38 @@ export default function Footer() {
     },
     {
       name: "Gemini API",
-      color: "text-purple-400",
+      color: "text-foreground",
       icon: <Sparkles className="h-3.5 w-3.5" />,
     },
     {
       name: "Supabase",
-      color: "text-emerald-400",
+      color: "text-foreground",
       icon: <Database className="h-3.5 w-3.5" />,
     },
     {
       name: "DuckDB-WASM",
-      color: "text-amber-400",
+      color: "text-foreground",
       icon: <BarChart3 className="h-3.5 w-3.5" />,
     },
   ];
 
   return (
-    <footer className="relative w-full border-t border-surface-light bg-background/80 backdrop-blur-md text-muted pt-16 pb-8 px-6 select-none overflow-hidden">
-      {/* Option C: Background grid + large decorative node connection shape */}
-      <div className="absolute inset-0 pointer-events-none opacity-10">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "radial-gradient(#121b2e 1.5px, transparent 1.5px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-      </div>
-
-      {/* Large decorative node connector SVG (ultra-low opacity, matches brand logo theme) */}
-      <svg
-        className="absolute -right-24 -bottom-24 h-[450px] w-[450px] text-secondary/5 pointer-events-none select-none opacity-40"
-        viewBox="0 0 100 100"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      >
-        <circle cx="50" cy="50" r="40" strokeDasharray="4 4" />
-        <circle cx="50" cy="50" r="25" strokeDasharray="2 2" />
-        <circle cx="50" cy="50" r="5" fill="currentColor" className="opacity-20" />
-        <line x1="50" y1="50" x2="20" y2="20" />
-        <line x1="50" y1="50" x2="80" y2="20" />
-        <line x1="50" y1="50" x2="80" y2="80" />
-        <line x1="50" y1="50" x2="20" y2="80" />
-        <circle cx="20" cy="20" r="2.5" fill="currentColor" />
-        <circle cx="80" cy="20" r="2.5" fill="currentColor" />
-        <circle cx="80" cy="80" r="2.5" fill="currentColor" />
-        <circle cx="20" cy="80" r="2.5" fill="currentColor" />
-      </svg>
-
-      <div className="max-w-7xl mx-auto space-y-12 relative z-10">
-        {/* Asymmetric Two-Sided Layout (6 cols brand, 6 cols menus & tech) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
-          {/* Brand/Tagline Block (Asymmetry - Left side, larger & bold visual anchor) */}
-          <div className="lg:col-span-6 space-y-6">
+    <footer className="w-full border-t border-border bg-background text-muted py-12 px-6 select-none relative overflow-hidden">
+      <div className="max-w-7xl mx-auto space-y-10 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Brand/Tagline Block */}
+          <div className="lg:col-span-6 space-y-4">
             <Link
               href="/"
-              className="inline-flex items-center space-x-3 hover:opacity-90 transition group focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded-lg p-1"
+              className="inline-flex items-center space-x-2.5 hover:opacity-90 transition group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-lg p-1"
             >
-              {/* Premium geometric Node Graph brand icon */}
-              <div className="bg-accent/10 p-2.5 rounded-xl border border-accent/20 group-hover:border-secondary-light/40 transition-all duration-300 shadow-glow-accent group-hover:shadow-glow-secondary">
+              <div className="p-1.5 rounded-lg border border-border text-accent bg-surface transition-colors duration-200">
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-5.5 w-5.5 text-accent-light"
+                  className="h-4 w-4"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
@@ -133,91 +76,84 @@ export default function Footer() {
                     stroke="currentColor"
                     strokeWidth="1.5"
                     strokeDasharray="3 2"
-                    className="opacity-50"
+                    className="opacity-40"
                   />
-                  <circle cx="4" cy="18" r="3" fill="#080d1a" stroke="#06b6d4" strokeWidth="2" />
-                  <circle cx="11" cy="6" r="3" fill="#080d1a" stroke="#3b82f6" strokeWidth="2" />
-                  <circle cx="20" cy="12" r="3" fill="#080d1a" stroke="#10b981" strokeWidth="2" />
+                  <circle cx="4" cy="18" r="2.5" fill="var(--bg)" stroke="currentColor" strokeWidth="2.5" />
+                  <circle cx="11" cy="6" r="2.5" fill="var(--bg)" stroke="currentColor" strokeWidth="2.5" />
+                  <circle cx="20" cy="12" r="2.5" fill="var(--bg)" stroke="currentColor" strokeWidth="2.5" />
                 </svg>
               </div>
-              <span className="font-display font-extrabold text-2xl tracking-tight text-white bg-gradient-to-r from-white via-foreground to-secondary bg-clip-text">
+              <span className="font-sans font-bold text-base tracking-tight text-foreground">
                 InsightLoop
               </span>
             </Link>
 
-            <p className="text-sm font-semibold max-w-lg leading-relaxed text-muted font-sans">
+            <p className="text-xs font-normal max-w-md leading-relaxed text-muted">
               Secure, AI-powered business intelligence directly in your browser. Upload spreadsheets, run local DuckDB analytics, and converse with an AI co-pilot instantly.
             </p>
 
-            {/* Elevated "Built by Ahmad Khan" brand credit block inside left side visual anchor */}
+            {/* Portfolio credit styled as clean hairline secondary button */}
             <div className="pt-2">
-              <span className="text-[11px] uppercase font-extrabold text-muted/60 tracking-wider block mb-2">
+              <span className="text-[10px] uppercase font-bold text-muted/60 tracking-wider block mb-2">
                 Engineering & Design
               </span>
               <a
                 href="https://ahmad-khan-build-ship-iterate-xi.vercel.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 px-4 py-2.5 bg-surface/60 hover:bg-surface-light border border-surface-light hover:border-secondary/40 rounded-xl transition duration-300 text-xs font-bold text-white shadow-glow-accent group focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-surface hover:bg-surface-subtle border border-border rounded-lg transition-colors text-xs font-medium text-foreground group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <span>Ahmad Khan — Portfolio</span>
-                <ArrowUpRight className="h-3.5 w-3.5 text-secondary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                <ArrowUpRight className="h-3.5 w-3.5 text-muted group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </a>
             </div>
           </div>
 
-          {/* Right Side compact grid - Col 2 & Col 3 merged into structured layout */}
-          <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-8 lg:gap-4 lg:pl-8">
-            {/* Column 1: Quick Links */}
-            <div className="space-y-4">
-              <h4 className="text-xs uppercase font-extrabold tracking-widest text-white border-b border-surface-light pb-2">
+          {/* Right Side compact grid */}
+          <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-8 lg:pl-8">
+            {/* Quick Links */}
+            <div className="space-y-3">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
                 Navigation
               </h4>
-              <nav className="flex flex-col space-y-2.5 text-sm font-semibold">
+              <nav className="flex flex-col space-y-2 text-xs font-medium">
                 <Link
                   href="/"
-                  className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded self-start py-0.5"
+                  className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
                 >
                   Home
                 </Link>
                 <Link
                   href="/dashboards"
-                  className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded self-start py-0.5"
+                  className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
                 >
                   My Dashboards
-                </Link>
-                <Link
-                  href="/#how-it-works"
-                  onClick={handleScrollToWorks}
-                  className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded self-start py-0.5"
-                >
-                  About
                 </Link>
                 <a
                   href="https://github.com/ahmad-461/insightloop"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center space-x-1 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none rounded self-start py-0.5"
+                  className="flex items-center space-x-1 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
                 >
                   <span>GitHub Repository</span>
-                  <ArrowUpRight className="h-3 w-3 text-secondary" />
+                  <ArrowUpRight className="h-3 w-3" />
                 </a>
               </nav>
             </div>
 
-            {/* Column 2: Tech Badges with Premium Custom Icons */}
-            <div className="space-y-4">
-              <h4 className="text-xs uppercase font-extrabold tracking-widest text-white border-b border-surface-light pb-2">
+            {/* Built With Badges */}
+            <div className="space-y-3">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
                 Built With
               </h4>
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-wrap gap-2">
                 {techBadges.map((tech) => (
                   <div
                     key={tech.name}
-                    className="flex items-center space-x-3 px-3 py-2 bg-surface/50 border border-surface-light hover:border-secondary/30 hover:bg-surface-light/35 transition rounded-xl text-xs font-bold text-foreground shadow-sm"
+                    className="flex items-center space-x-1.5 px-2 py-1 bg-surface border border-border rounded-lg text-[10px] font-medium text-foreground"
                   >
                     <div className={`${tech.color} shrink-0`}>{tech.icon}</div>
-                    <span className="text-muted/90">{tech.name}</span>
+                    <span>{tech.name}</span>
                   </div>
                 ))}
               </div>
@@ -225,26 +161,22 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar separator */}
-        <div className="border-t border-surface-light/60 pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Secondary Details */}
-          <div className="text-xs text-muted/60 font-bold text-center md:text-left space-y-1">
-            <p>Designed and built entirely client-side with full secure browser sandboxing.</p>
-            <p>All data and metadata rows remain local unless explicitly synced by the user.</p>
+        {/* Bottom Bar */}
+        <div className="border-t border-border pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-[10px] text-muted leading-relaxed text-center md:text-left">
+            <p>Designed and built entirely client-side. All data rows remain local unless synced.</p>
           </div>
 
-          {/* Social Links & Copyright */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {/* GitHub Profile */}
+          <div className="flex items-center space-x-3 text-xs">
+            {/* Social Icons */}
             <a
               href="https://github.com/ahmad-461"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2.5 bg-surface hover:bg-surface-light border border-surface-light hover:border-secondary/40 text-muted hover:text-white rounded-xl transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-sm"
+              className="p-1.5 text-muted hover:text-foreground hover:bg-surface border border-transparent hover:border-border rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               title="GitHub Profile"
             >
-              {/* Fallback svg icon for Github to prevent Lucide-react export issues */}
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+              <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
                 <path
                   fillRule="evenodd"
                   clipRule="evenodd"
@@ -253,27 +185,25 @@ export default function Footer() {
               </svg>
             </a>
 
-            {/* Portfolio Website */}
             <a
               href="https://ahmad-khan-build-ship-iterate-xi.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2.5 bg-surface hover:bg-surface-light border border-surface-light hover:border-secondary/40 text-muted hover:text-white rounded-xl transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-sm"
+              className="p-1.5 text-muted hover:text-foreground hover:bg-surface border border-transparent hover:border-border rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               title="Portfolio Website"
             >
-              <Globe className="h-4 w-4" />
+              <Globe className="h-3.5 w-3.5" />
             </a>
 
-            {/* Email Contact */}
             <a
               href="mailto:contact@example.com"
-              className="p-2.5 bg-surface hover:bg-surface-light border border-surface-light hover:border-secondary/40 text-muted hover:text-white rounded-xl transition focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none shadow-sm"
+              className="p-1.5 text-muted hover:text-foreground hover:bg-surface border border-transparent hover:border-border rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               title="Email Ahmad Khan"
             >
-              <Mail className="h-4 w-4" />
+              <Mail className="h-3.5 w-3.5" />
             </a>
 
-            <div className="text-[11px] text-muted/50 font-semibold pl-4 border-l border-surface-light/60">
+            <div className="text-[10px] text-muted/50 font-medium pl-3 border-l border-border">
               © {new Date().getFullYear()} InsightLoop. Ahmad Khan.
             </div>
           </div>
