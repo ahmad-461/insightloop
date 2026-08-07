@@ -18,6 +18,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://insightloop.vercel.app"),
   title: "InsightLoop — AI Business Intelligence Dashboard",
   description: "AI-powered business intelligence dashboard where you can upload CSV/Excel files and interact with an AI data analyst.",
 };

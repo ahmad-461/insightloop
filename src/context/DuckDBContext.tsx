@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 import * as duckdb from "@duckdb/duckdb-wasm";
 import { getDuckDB, serializeQueryResult } from "@/utils/duckdb";
 import { ParsedResult } from "@/utils/parser";
@@ -29,51 +29,49 @@ export const useDuckDB = () => useContext(DuckDBContext);
 
 export const DuckDBProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [db, setDb] = useState<duckdb.AsyncDuckDB | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [datasetLoaded, setDatasetLoaded] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-
-    async function init() {
-      try {
-        const duckdbInstance = await getDuckDB();
-        if (active) {
-          setDb(duckdbInstance);
-          setLoading(false);
-        }
-      } catch (err: unknown) {
-        if (active) {
-          console.error("DuckDB initialization failed:", err);
-          setError(err instanceof Error ? err.message : "Failed to initialize DuckDB");
-          setLoading(false);
-        }
-      }
+  const initDuckDB = useCallback(async (): Promise<duckdb.AsyncDuckDB> => {
+    if (db) return db;
+    setLoading(true);
+    setError(null);
+    try {
+      const duckdbInstance = await getDuckDB();
+      setDb(duckdbInstance);
+      setLoading(false);
+      return duckdbInstance;
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Failed to initialize DuckDB";
+      setError(errMsg);
+      setLoading(false);
+      throw err;
     }
-
-    init();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadDataset = useCallback(async (parsedData: ParsedResult): Promise<{ success: boolean; error?: string }> => {
-    if (!db) {
-      return { success: false, error: "Database engine is not fully loaded yet." };
-    }
-    setDatasetLoaded(false);
-    const result = await loadParsedDataIntoDuckDB(db, parsedData);
-    if (result.success) {
-      setDatasetLoaded(true);
-    }
-    return result;
   }, [db]);
 
+  const loadDataset = useCallback(async (parsedData: ParsedResult): Promise<{ success: boolean; error?: string }> => {
+    setDatasetLoaded(false);
+    try {
+      const activeDb = db || await initDuckDB();
+      const result = await loadParsedDataIntoDuckDB(activeDb, parsedData);
+      if (result.success) {
+        setDatasetLoaded(true);
+      }
+      return result;
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : "Failed to initialize database engine." };
+    }
+  }, [db, initDuckDB]);
+
   const runQuery = useCallback(async (sql: string): Promise<Record<string, unknown>[] | { error: string }> => {
-    if (!db) {
-      return { error: "Database engine is not fully loaded yet." };
+    let activeDb = db;
+    if (!activeDb) {
+      try {
+        activeDb = await initDuckDB();
+      } catch (err: unknown) {
+        return { error: "Database engine failed to load: " + (err instanceof Error ? err.message : String(err)) };
+      }
     }
 
     // 1. Validate & sanitize SQL
@@ -85,7 +83,7 @@ export const DuckDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const cleanSql = validation.cleanSql!;
     let conn;
     try {
-      conn = await db.connect();
+      conn = await activeDb.connect();
       const arrowResult = await conn.query(cleanSql);
 
       // Convert Arrow Table to Array of JS Objects
@@ -108,7 +106,7 @@ export const DuckDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       }
     }
-  }, [db]);
+  }, [db, initDuckDB]);
 
   return (
     <DuckDBContext.Provider value={{ db, loading, error, datasetLoaded, loadDataset, runQuery }}>

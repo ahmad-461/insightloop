@@ -14,7 +14,9 @@ import {
   User,
   ChartBar,
   Cloud,
-  CloudOff
+  CloudOff,
+  HelpCircle,
+  X
 } from "lucide-react";
 import { ColumnSchema } from "@/utils/parser";
 import { formatNumber } from "@/utils/formatter";
@@ -66,6 +68,7 @@ export default function ChatPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedSqlIds, setExpandedSqlIds] = useState<Record<string, boolean>>({});
+  const [showHelp, setShowHelp] = useState(false);
 
   // Update messages state when initialMessages loads
   useEffect(() => {
@@ -401,6 +404,18 @@ export default function ChatPanel({
               <span>Clear Session</span>
             </button>
           )}
+          {/* Help/Info Toggle Button */}
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className={`p-1.5 border rounded-xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none ${
+              showHelp
+                ? "bg-secondary/20 border-secondary-light/40 text-white shadow-glow-secondary"
+                : "bg-background hover:bg-surface-light border-surface-light text-muted hover:text-white"
+            }`}
+            title="How the AI Co-Pilot works"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-1.5 bg-background hover:bg-surface-light border border-surface-light text-muted hover:text-white rounded-xl transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
@@ -414,6 +429,29 @@ export default function ChatPanel({
         <div className="flex flex-col h-[500px]">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-background/10 select-text">
+            {/* Collapsible Technology/Help Info Card */}
+            {showHelp && (
+              <div className="bg-surface-light/35 border border-surface-light p-4 rounded-xl space-y-2.5 animate-fade-in relative shadow-glow-accent mb-4">
+                <button
+                  onClick={() => setShowHelp(false)}
+                  className="absolute top-3.5 right-3.5 text-muted hover:text-white transition rounded p-0.5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <div className="flex items-center space-x-2 text-secondary-light">
+                  <Sparkles className="h-4.5 w-4.5 animate-pulse" />
+                  <span className="font-display text-xs font-extrabold uppercase tracking-wider">AI Co-Pilot Technology Explained</span>
+                </div>
+                <p className="text-[11px] text-muted leading-relaxed font-semibold">
+                  This interface allows you to query your data using natural language. Here is how your privacy and analysis are structured:
+                </p>
+                <ol className="list-decimal pl-4 text-[10.5px] text-muted/90 space-y-1 font-semibold">
+                  <li><strong className="text-white">Natural Language Translation:</strong> Your question is sent securely to <strong className="text-white">Gemini 2.5 AI</strong> along with only your dataset&apos;s schema metadata (column names and types). Your raw data rows are <strong className="text-white">never</strong> shared with any AI APIs, preserving absolute client-side privacy.</li>
+                  <li><strong className="text-white">SQL Generation & Local Execution:</strong> Gemini converts your question into a single safe SQL SELECT query. This query is executed locally inside your browser using the high-performance <strong className="text-white">DuckDB-WASM</strong> database engine.</li>
+                  <li><strong className="text-white">Conversational Explanation & Charts:</strong> The locally retrieved query results are summarized in clean English, and an interactive Recharts chart is dynamically rendered if the returned columns match a chartable schema.</li>
+                </ol>
+              </div>
+            )}
             {!datasetLoaded ? (
               <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
                 <AlertCircle className="h-8 w-8 text-muted/30" />

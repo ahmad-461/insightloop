@@ -660,9 +660,9 @@ function HomeContent() {
                 </span>
               </div>
 
-              <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-none">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-none">
                 Your data, <span className="bg-gradient-to-r from-accent-light via-secondary to-secondary-light bg-clip-text text-transparent">explained in plain English</span>
-              </h2>
+              </h1>
 
               <p className="text-base sm:text-lg text-muted leading-relaxed max-w-2xl font-medium">
                 Upload a spreadsheet and get instant dashboards, deeper statistical insights, and an AI analyst you can ask anything — all running securely in your browser.
@@ -690,6 +690,31 @@ function HomeContent() {
               <MiniDashboardPreview reducedMotion={reducedMotion} />
             </div>
           </section>
+
+          {/* Transparent Technology & Privacy Card */}
+          <div className="bg-surface/50 border border-surface-light/60 rounded-2xl p-6 max-w-4xl mx-auto space-y-4 shadow-glow-accent animate-fade-in">
+            <div className="flex items-center space-x-2 text-accent-light">
+              <Sparkles className="h-5 w-5 animate-pulse" />
+              <h4 className="font-display text-sm font-extrabold uppercase tracking-wider">How InsightLoop Works</h4>
+            </div>
+            <p className="text-xs text-muted leading-relaxed font-semibold">
+              This dashboard uses <strong className="text-white">Gemini AI</strong> to convert your natural language questions into safe, highly optimized SQL queries. These queries are executed <strong className="text-white">entirely inside your browser</strong> using <strong className="text-white">DuckDB-WASM</strong>, a lightning-fast client-side analytical database engine.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-[11px] font-bold text-foreground">
+              <div className="flex items-center space-x-2 bg-background/50 border border-surface-light p-3 rounded-xl">
+                <div className="w-2 h-2 rounded-full bg-accent-light" />
+                <span>100% Client-Side Privacy</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-background/50 border border-surface-light p-3 rounded-xl">
+                <div className="w-2 h-2 rounded-full bg-secondary" />
+                <span>Gemini AI Text-to-SQL</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-background/50 border border-surface-light p-3 rounded-xl">
+                <div className="w-2 h-2 rounded-full bg-success" />
+                <span>DuckDB Analytical Engine</span>
+              </div>
+            </div>
+          </div>
 
           {/* Upload Zone Section */}
           <div id="upload-zone" className="max-w-4xl mx-auto space-y-8 pt-12 border-t border-surface-light/20">

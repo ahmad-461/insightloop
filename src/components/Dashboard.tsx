@@ -15,7 +15,8 @@ import {
   Save,
   RefreshCw,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -105,6 +106,8 @@ export default function Dashboard({
   const [saving, setSaving] = useState(false);
   const [saveSuccessId, setSaveSuccessId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   // Determine active schema columns
   const dateCols = useMemo(() => parsedData.schema.filter(c => c.currentType === "date"), [parsedData.schema]);
@@ -610,6 +613,55 @@ export default function Dashboard({
     setShowSaveModal(true);
   };
 
+  // High-fidelity PDF export logic using jsPDF + html2canvas
+  const handleExportPDF = async () => {
+    if (widgets.length === 0) return;
+    setExportingPdf(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: html2canvas } = await import("html2canvas");
+
+      const element = document.getElementById("dashboard-widgets-container");
+      if (!element) {
+        throw new Error("Widgets container not found.");
+      }
+
+      // Capture element with high-fidelity scaling
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: "#080d1a",
+        useCORS: true,
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const cleanFileName = parsedData.fileName.replace(/\.[^/.]+$/, "");
+      pdf.save(`${cleanFileName}_dashboard.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      alert("Failed to export PDF. Please try again.");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   // Standard loading skeleton
   if (loading) {
     return (
@@ -691,6 +743,25 @@ export default function Dashboard({
           >
             <Save className="h-3.5 w-3.5" />
             <span>Save Dashboard</span>
+          </button>
+
+          {/* Export PDF Button */}
+          <button
+            onClick={handleExportPDF}
+            disabled={exportingPdf || widgets.length === 0}
+            className="flex items-center space-x-2 px-4.5 py-2 bg-secondary/10 hover:bg-secondary/20 text-secondary-light disabled:opacity-40 border border-secondary/20 hover:border-secondary-light/40 rounded-xl text-xs font-extrabold shadow-glow-secondary transition-all duration-300 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none"
+          >
+            {exportingPdf ? (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                <span>Exporting PDF...</span>
+              </>
+            ) : (
+              <>
+                <Download className="h-3.5 w-3.5" />
+                <span>Export PDF</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -932,7 +1003,7 @@ export default function Dashboard({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+        <div id="dashboard-widgets-container" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
           {widgets.map((widget, index) => {
             const isKpi = widget.type === "kpi";
             const gridColSpan = isKpi
@@ -970,7 +1041,7 @@ export default function Dashboard({
                   </div>
 
                   {/* Move up / Move down / Delete Action Buttons */}
-                  <div className="flex items-center space-x-0.5 flex-shrink-0 bg-background/50 border border-surface-light p-1 rounded-lg">
+                  <div data-html2canvas-ignore="true" className="flex items-center space-x-0.5 flex-shrink-0 bg-background/50 border border-surface-light p-1 rounded-lg">
                     <button
                       type="button"
                       onClick={() => moveWidget(index, "up")}
