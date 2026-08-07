@@ -2,9 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #ffffff;
+  --surface: #fafafa;
+  --surface-subtle: #f3f4f6;
+  --surface-hover: #f3f4f6;
+  --border: #e5e7eb;
+  --text-primary: #0a0a0a;
+  --text-secondary: #6b7280;
+  --accent: #2563eb;
+  --success: #059669;
+  --warning: #d97706;
+}
+
+.dark {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface-subtle: #1a1a1a;
+  --surface-hover: #1a1a1a;
+  --border: #262626;
+  --text-primary: #fafafa;
+  --text-secondary: #a3a3a3;
+  --accent: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+}
+
+/* Ensure smooth theme transitions for a polished premium feel */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
 html,
 body {
-  background-color: #0f172a;
-  color: #f8fafc;
+  background-color: var(--bg);
+  color: var(--text-primary);
   min-height: 100vh;
+}
+
+/* Custom scrollbar matching the premium minimal design */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }

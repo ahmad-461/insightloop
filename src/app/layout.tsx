@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { DuckDBProvider } from "@/context/DuckDBContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const spaceGrotesk = Space_Grotesk({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-plus-jakarta-sans",
-  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,11 +21,35 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Head script to prevent flash of wrong theme
+  const themeScript = `
+    (function() {
+      try {
+        var storedTheme = localStorage.getItem('insightloop-theme');
+        var systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (storedTheme === 'dark' || (!storedTheme && systemPrefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {
+        console.error('Theme injection error:', e);
+      }
+    })();
+  `;
+
   return (
-    <html lang="en" className={`dark ${spaceGrotesk.variable} ${plusJakartaSans.variable}`}>
-      <body className="bg-background text-foreground font-sans antialiased min-h-screen flex flex-col selection:bg-secondary/30 selection:text-white">
+    <html
+      lang="en"
+      className={`${inter.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="bg-background text-foreground font-sans antialiased min-h-screen flex flex-col selection:bg-accent/20">
         <DuckDBProvider>
-          {/* New Polished Sticky Navigation Header */}
+          {/* New Premium Navigation Header */}
           <Header />
 
           {/* Page Content */}
@@ -39,7 +57,7 @@ export default function RootLayout({
             {children}
           </main>
 
-          {/* New Polished Professional Footer */}
+          {/* New Premium Footer */}
           <Footer />
         </DuckDBProvider>
       </body>
