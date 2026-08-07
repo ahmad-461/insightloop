@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { DuckDBProvider } from "@/context/DuckDBContext";
+import { CommandPaletteProvider } from "@/context/CommandPaletteContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageTransition from "@/components/PageTransition";
+import CommandPalette from "@/components/CommandPalette";
 import { ScrollProgressBar, CursorGlow } from "@/components/PremiumEffects";
 
 const inter = Inter({
@@ -66,18 +68,23 @@ export default function RootLayout({
         <CursorGlow />
 
         <DuckDBProvider>
-          {/* New Premium Navigation Header */}
-          <Header />
+          <CommandPaletteProvider>
+            {/* New Premium Navigation Header */}
+            <Header />
 
-          {/* Page Content with Smooth Motion Transition */}
-          <main className="flex-1 flex flex-col relative z-10">
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </main>
+            {/* Page Content with Smooth Motion Transition */}
+            <main className="flex-1 flex flex-col relative z-10">
+              <PageTransition>
+                {children}
+              </PageTransition>
+            </main>
 
-          {/* New Premium Footer */}
-          <Footer />
+            {/* New Premium Footer */}
+            <Footer />
+
+            {/* Command Palette Overlay */}
+            <CommandPalette />
+          </CommandPaletteProvider>
         </DuckDBProvider>
       </body>
     </html>
