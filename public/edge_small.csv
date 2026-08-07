@@ -1,0 +1,6 @@
+Date,Category,Product,Sales,Quantity,Region
+2026-01-01,Electronics,Smartphone,$850.00,2,North
+2026-01-02,Electronics,Laptop,$1200.00,1,North
+2026-01-03,Furniture,Office Chair,$150.00,5,East
+2026-01-04,Furniture,Desk,$350.00,2,South
+2026-01-05,Office Supplies,Notebook,$15.00,20,West
