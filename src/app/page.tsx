@@ -24,7 +24,10 @@ import {
   ChevronUp,
   LayoutDashboard,
   XCircle,
-  Sparkles
+  Sparkles,
+  MessageSquare,
+  Compass,
+  Cpu
 } from "lucide-react";
 import {
   parseCSV,
@@ -42,6 +45,59 @@ import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+// Scroll-Reveal Animated Card Component using IntersectionObserver
+function ScrollRevealCard({ children, index, reducedMotion }: { children: React.ReactNode; index: number; reducedMotion: boolean }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      {
+        threshold: 0.15,
+        rootMargin: "0px 0px -50px 0px",
+      }
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [reducedMotion]);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        transitionDelay: reducedMotion ? "0ms" : `${index * 150}ms`,
+      }}
+      className={`transition-all duration-700 ease-out ${
+        isVisible
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-8"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
 
 function MiniDashboardPreview({ reducedMotion }: { reducedMotion: boolean }) {
   const [count, setCount] = useState(0);
@@ -213,6 +269,7 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const reactivateId = searchParams ? searchParams.get("reactivate") : null;
+  const scrollParam = searchParams ? searchParams.get("scroll") : null;
 
   const [parsedData, setParsedData] = useState<ParsedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -249,6 +306,21 @@ function HomeContent() {
     mediaQuery.addEventListener("change", listener);
     return () => mediaQuery.removeEventListener("change", listener);
   }, []);
+
+  // Handle URL query parameters for scrolling on mount
+  useEffect(() => {
+    if (scrollParam) {
+      // Clear query params to prevent scrolling on reload
+      router.replace("/");
+
+      setTimeout(() => {
+        const el = document.getElementById(scrollParam);
+        if (el) {
+          el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+        }
+      }, 300);
+    }
+  }, [scrollParam, router, reducedMotion]);
 
   // Smooth scroll down to file upload container
   const scrollToUpload = () => {
@@ -691,13 +763,106 @@ function HomeContent() {
             </div>
           </section>
 
+          {/* 3. "How It Works" Section (between Hero and Upload Zone) */}
+          <section id="how-it-works" className="pt-16 border-t border-surface-light/20 scroll-mt-24 space-y-12">
+            <div className="text-center space-y-3">
+              <span className="text-[10px] uppercase font-extrabold text-secondary tracking-widest block">Core Workflow</span>
+              <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                How InsightLoop Works
+              </h3>
+              <p className="text-sm text-muted max-w-md mx-auto leading-relaxed">
+                Unlock advanced analytics and query datasets natively in your browser in under 10 seconds.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Step 1: Upload */}
+              <ScrollRevealCard index={0} reducedMotion={reducedMotion}>
+                <div className="bg-surface/50 border border-surface-light p-6.5 rounded-2xl h-full flex flex-col space-y-4 hover:border-accent/45 transition duration-300 shadow-glow-accent relative group overflow-hidden">
+                  <div className="absolute top-4 right-4 text-3xl font-display font-black text-surface-light/50 group-hover:text-accent/15 transition-colors select-none">
+                    01
+                  </div>
+                  <div className="h-12 w-12 bg-accent/10 border border-accent/20 rounded-xl flex items-center justify-center text-accent-light shadow-inner">
+                    <Upload className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h4 className="text-base font-extrabold text-white">1. Secure Upload</h4>
+                    <p className="text-xs text-muted leading-relaxed font-semibold">
+                      Drop in any CSV or Excel file. Your dataset is parsed entirely client-side and remains strictly private in your browser.
+                    </p>
+                  </div>
+                </div>
+              </ScrollRevealCard>
+
+              {/* Step 2: Analyze */}
+              <ScrollRevealCard index={1} reducedMotion={reducedMotion}>
+                <div className="bg-surface/50 border border-surface-light p-6.5 rounded-2xl h-full flex flex-col space-y-4 hover:border-secondary/45 transition duration-300 shadow-glow-secondary relative group overflow-hidden">
+                  <div className="absolute top-4 right-4 text-3xl font-display font-black text-surface-light/50 group-hover:text-secondary/15 transition-colors select-none">
+                    02
+                  </div>
+                  <div className="h-12 w-12 bg-secondary/10 border border-secondary/20 rounded-xl flex items-center justify-center text-secondary shadow-inner">
+                    <Compass className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h4 className="text-base font-extrabold text-white">2. Instant Analysis</h4>
+                    <p className="text-xs text-muted leading-relaxed font-semibold">
+                      Generate responsive dashboards, execute raw browser-based SQL, and run advanced serverless statistical trend forecasting.
+                    </p>
+                  </div>
+                </div>
+              </ScrollRevealCard>
+
+              {/* Step 3: Ask */}
+              <ScrollRevealCard index={2} reducedMotion={reducedMotion}>
+                <div className="bg-surface/50 border border-surface-light p-6.5 rounded-2xl h-full flex flex-col space-y-4 hover:border-accent-light/45 transition duration-300 shadow-glow-accent relative group overflow-hidden">
+                  <div className="absolute top-4 right-4 text-3xl font-display font-black text-surface-light/50 group-hover:text-accent-light/15 transition-colors select-none">
+                    03
+                  </div>
+                  <div className="h-12 w-12 bg-accent-light/10 border border-accent-light/20 rounded-xl flex items-center justify-center text-accent-light shadow-inner">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h4 className="text-base font-extrabold text-white">3. Conversational AI</h4>
+                    <p className="text-xs text-muted leading-relaxed font-semibold">
+                      Chat with a smart AI analyst that translates plain English instructions into raw SQL queries and executes them in real-time.
+                    </p>
+                  </div>
+                </div>
+              </ScrollRevealCard>
+            </div>
+          </section>
+
+          {/* 4. Subtle trust/credibility signal */}
+          <section className="flex flex-col items-center justify-center space-y-3 pt-4 select-none">
+            <span className="text-[10px] uppercase font-extrabold text-muted/60 tracking-widest flex items-center gap-1.5">
+              <Cpu className="h-3.5 w-3.5 text-secondary" />
+              <span>Technical Engine Stack</span>
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-bold text-muted/80">
+              <span className="flex items-center gap-1.5 hover:text-white transition duration-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                <span>Powered by Gemini AI</span>
+              </span>
+              <span className="text-surface-light hidden sm:inline">|</span>
+              <span className="flex items-center gap-1.5 hover:text-white transition duration-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>DuckDB-WASM Local DB</span>
+              </span>
+              <span className="text-surface-light hidden sm:inline">|</span>
+              <span className="flex items-center gap-1.5 hover:text-white transition duration-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>Supabase Secure Cloud Sync</span>
+              </span>
+            </div>
+          </section>
+
           {/* Upload Zone Section */}
-          <div id="upload-zone" className="max-w-4xl mx-auto space-y-8 pt-12 border-t border-surface-light/20">
+          <div id="upload-zone" className="max-w-4xl mx-auto space-y-8 pt-16 border-t border-surface-light/20 scroll-mt-24">
             <div className="text-center space-y-2">
               <h3 className="font-display text-2xl font-bold text-white tracking-tight">
                 Upload your data
               </h3>
-              <p className="text-sm text-muted max-w-md mx-auto">
+              <p className="text-sm text-muted max-w-md mx-auto leading-relaxed">
                 CSV or Excel files are parsed securely in memory. Your raw rows never leave your computer.
               </p>
             </div>

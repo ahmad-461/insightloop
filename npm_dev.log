@@ -6,27 +6,8 @@
    - Local:        http://localhost:3000
 
  ✓ Starting...
- ✓ Ready in 2.9s
+ ✓ Ready in 1746ms
  ○ Compiling / ...
- ✓ Compiled / in 12.1s (2103 modules)
- GET / 200 in 13426ms
- ✓ Compiled in 1516ms (1026 modules)
- HEAD / 200 in 43ms
- GET / 200 in 84ms
- ○ Compiling /api/insights ...
- ✓ Compiled /api/insights in 1400ms (2099 modules)
- POST /api/insights 200 in 2459ms
- POST /api/insights 200 in 914ms
- POST /api/insights 500 in 900ms
- POST /api/insights 500 in 998ms
- ✓ Compiled in 2.7s (2113 modules)
- GET / 200 in 752ms
- POST /api/insights 200 in 1014ms
- POST /api/insights 200 in 1109ms
- POST /api/insights 400 in 1317ms
- POST /api/insights 400 in 1319ms
- GET / 200 in 65ms
- POST /api/insights 200 in 1342ms
- POST /api/insights 200 in 971ms
- POST /api/insights 200 in 928ms
- ✓ Compiled in 1009ms (2095 modules)
+ ✓ Compiled / in 12.3s (2188 modules)
+ GET / 200 in 14647ms
+ ✓ Compiled in 2.5s (1065 modules)
