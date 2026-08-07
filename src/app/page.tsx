@@ -29,6 +29,7 @@ import {
   Compass,
   Cpu
 } from "lucide-react";
+import { motion } from "framer-motion";
 import {
   parseCSV,
   parseExcel,
@@ -43,59 +44,39 @@ import ChatPanel from "@/components/ChatPanel";
 import AdvancedInsights from "@/components/AdvancedInsights";
 import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
+import {
+  AuroraBackground,
+  FloatingAIIcons,
+  MagneticButton,
+  useLocalGlow
+} from "@/components/PremiumEffects";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
-// Scroll-Reveal Animated Card Component using IntersectionObserver
-function ScrollRevealCard({ children, index, reducedMotion }: { children: React.ReactNode; index: number; reducedMotion: boolean }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (reducedMotion) {
-      setIsVisible(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target);
-        }
-      },
-      {
-        threshold: 0.15,
-        rootMargin: "0px 0px -50px 0px",
-      }
-    );
-
-    const currentRef = ref.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [reducedMotion]);
-
+// Scroll-Reveal Animated Card Component using IntersectionObserver / Framer Motion
+function ScrollRevealCard({
+  children,
+  index,
+  reducedMotion
+}: {
+  children: React.ReactNode;
+  index: number;
+  reducedMotion: boolean;
+}) {
   return (
-    <div
-      ref={ref}
-      style={{
-        transitionDelay: reducedMotion ? "0ms" : `${index * 150}ms`,
-      }}
-      className={`transition-all duration-700 ease-out ${
-        isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-8"
-      }`}
+    <motion.div
+      initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      whileInView={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={
+        reducedMotion
+          ? { duration: 0 }
+          : { duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: index * 0.15 }
+      }
+      className="h-full"
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -143,15 +124,15 @@ function MiniDashboardPreview({ reducedMotion }: { reducedMotion: boolean }) {
   }, [reducedMotion]);
 
   return (
-    <div className="relative w-full max-w-lg bg-surface border border-border rounded-xl overflow-hidden select-none shadow-sm">
+    <div className="relative w-full max-w-lg bg-surface border border-border rounded-xl overflow-hidden select-none shadow-md hover:shadow-xl transition-shadow duration-300">
       {/* OS Titlebar */}
       <div className="flex items-center justify-between px-4 py-3 bg-surface-subtle border-b border-border">
         <div className="flex items-center space-x-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-border" />
-          <div className="w-2.5 h-2.5 rounded-full bg-border" />
-          <div className="w-2.5 h-2.5 rounded-full bg-border" />
+          <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
         </div>
-        <span className="text-[10px] font-sans font-medium tracking-wider text-muted uppercase">
+        <span className="text-[10px] font-sans font-semibold tracking-wider text-muted uppercase">
           InsightLoop AI Sandbox
         </span>
         <div className="w-10" />
@@ -295,10 +276,12 @@ function HomeContent() {
     return () => mediaQuery.removeEventListener("change", listener);
   }, []);
 
+  // Local glow effect tracker hook
+  const { handleMouseMove: trackCardGlow } = useLocalGlow();
+
   // Handle URL query parameters for scrolling on mount
   useEffect(() => {
     if (scrollParam) {
-      // Clear query params to prevent scrolling on reload
       router.replace("/");
 
       setTimeout(() => {
@@ -365,7 +348,6 @@ function HomeContent() {
   const matchSchemas = (savedSummary: unknown, uploadedSchema: ColumnSchema[]): boolean => {
     if (!savedSummary) return false;
 
-    // Resolve schema array
     let savedSchema: ColumnSchema[] = [];
     if (typeof savedSummary === "object" && !Array.isArray(savedSummary) && "schema" in savedSummary) {
       savedSchema = Array.isArray((savedSummary as { schema: unknown }).schema) ? ((savedSummary as { schema: ColumnSchema[] }).schema) : [];
@@ -377,7 +359,6 @@ function HomeContent() {
 
     if (savedSchema.length === 0) return false;
 
-    // Compatibility rule: same type, or text/category compatible, or number/currency compatible
     const isCompatible = (t1: string, t2: string) => {
       if (t1 === t2) return true;
       if ((t1 === "text" || t1 === "category") && (t2 === "text" || t2 === "category")) return true;
@@ -385,7 +366,6 @@ function HomeContent() {
       return false;
     };
 
-    // All columns from savedSchema must exist in uploadedSchema (match by sqlSafeName) with compatible types
     for (const savedCol of savedSchema) {
       const uploadedCol = uploadedSchema.find((u) => u.sqlSafeName === savedCol.sqlSafeName);
       if (!uploadedCol) {
@@ -415,7 +395,6 @@ function HomeContent() {
     setQueryResults(null);
     setQueryError(null);
 
-    // Enforce 5MB limit client-side
     if (file.size > MAX_FILE_SIZE_BYTES) {
       setError(`File is too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Maximum size allowed is 5MB.`);
       return;
@@ -439,11 +418,9 @@ function HomeContent() {
           result = await parseExcel(file);
         }
 
-        // Reactivation schema matching check
         if (reactivateId && targetDashboard) {
           const matches = matchSchemas(targetDashboard.dataset_summary, result.schema);
           if (matches) {
-            // Align column currentTypes to match saved dashboard overrides exactly
             let savedCols: ColumnSchema[] = [];
             const summary = targetDashboard.dataset_summary;
             if (
@@ -473,7 +450,6 @@ function HomeContent() {
               schema: alignedSchema,
             };
 
-            // Sync database right away
             setSyncStatus({ loading: true, error: null });
             const loadRes = await loadDataset(alignedResult);
             if (!loadRes.success) {
@@ -481,14 +457,12 @@ function HomeContent() {
             }
             setSyncStatus({ loading: false, error: null });
 
-            // Store stripped result in sessionStorage for page revisit retrieval
             const strippedResult = {
               ...alignedResult,
-              rawRows: [], // omit raw rows to save storage space
+              rawRows: [],
             };
             sessionStorage.setItem(`insightloop_reactivated_parsed_data_${reactivateId}`, JSON.stringify(strippedResult));
 
-            // Clean up query param from URL and redirect
             router.push(`/dashboards/${reactivateId}`);
             return;
           } else {
@@ -506,7 +480,6 @@ function HomeContent() {
     });
   };
 
-  // Input click handlers
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFileProcess(e.target.files[0]);
@@ -517,7 +490,6 @@ function HomeContent() {
     fileInputRef.current?.click();
   };
 
-  // Drag and drop events
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -536,7 +508,6 @@ function HomeContent() {
     }
   };
 
-  // Clear file state and restart
   const handleClear = () => {
     setParsedData(null);
     setError(null);
@@ -551,7 +522,6 @@ function HomeContent() {
     }
   };
 
-  // Handler for manual type override of a column
   const handleTypeOverride = (colName: string, newType: ColumnType) => {
     if (!parsedData) return;
 
@@ -568,7 +538,6 @@ function HomeContent() {
     });
   };
 
-  // Handle running raw SQL Query against DuckDB
   const handleRunQuery = async (queryToRun: string = sqlQuery) => {
     setQueryRunning(true);
     setQueryError(null);
@@ -587,7 +556,6 @@ function HomeContent() {
     }
   };
 
-  // Format bytes helper
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -596,7 +564,6 @@ function HomeContent() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // Icon mapping for types
   const getTypeIcon = (type: ColumnType) => {
     switch (type) {
       case "date":
@@ -613,7 +580,6 @@ function HomeContent() {
     }
   };
 
-  // Type label helper
   const getTypeLabel = (type: ColumnType) => {
     switch (type) {
       case "date": return "📅 date";
@@ -624,7 +590,6 @@ function HomeContent() {
     }
   };
 
-  // Helpers to resolve dynamic query columns based on actual schema for dynamic testing
   const getFirstCol = () => parsedData?.schema[0]?.sqlSafeName || "column_1";
   const getCategoryCol = () => parsedData?.schema.find(c => c.currentType === "category")?.sqlSafeName || getFirstCol();
   const getNumCol = () => parsedData?.schema.find(c => c.currentType === "number" || c.currentType === "currency")?.sqlSafeName || getFirstCol();
@@ -653,8 +618,7 @@ function HomeContent() {
   ] : [];
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 space-y-12">
-      {/* Inject custom CSS keyframe animations */}
+    <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 space-y-12 relative z-10">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes draw-path {
           from { stroke-dashoffset: 400; }
@@ -676,7 +640,7 @@ function HomeContent() {
 
       {/* REACTIVATION INFO BOX */}
       {reactivateId && targetDashboard && !parsedData && (
-        <div className="bg-surface border border-border p-5 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-3xl mx-auto animate-fade-in shadow-sm">
+        <div className="bg-surface/80 backdrop-blur border border-border p-5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-3xl mx-auto animate-fade-in shadow-md">
           <div className="flex items-start space-x-3">
             <RefreshCw className="h-5 w-5 text-accent mt-0.5 animate-spin flex-shrink-0" />
             <div className="space-y-1">
@@ -688,7 +652,7 @@ function HomeContent() {
           </div>
           <button
             onClick={() => router.replace("/")}
-            className="text-xs text-muted hover:text-foreground transition font-medium underline shrink-0 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded"
+            className="text-xs text-muted hover:text-foreground transition font-semibold underline shrink-0 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded"
           >
             Cancel Reactivation
           </button>
@@ -697,7 +661,7 @@ function HomeContent() {
 
       {/* REACTIVATION WARNING */}
       {reactivateWarning && (
-        <div className="bg-warning/10 border border-warning/30 p-4 rounded-lg flex items-start space-x-3 max-w-3xl mx-auto animate-fade-in text-warning">
+        <div className="bg-warning/10 border border-warning/30 p-4 rounded-xl flex items-start space-x-3 max-w-3xl mx-auto animate-fade-in text-warning">
           <XCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="text-xs font-bold text-foreground">Schema Mismatch Detected</p>
@@ -708,57 +672,77 @@ function HomeContent() {
 
       {/* Main Upload Area (when no file is successfully parsed) */}
       {!parsedData && (
-        <div className="space-y-16 py-4">
-          {/* Beautiful Hero section */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div className="space-y-20 py-4 relative">
+
+          {/* Beautiful Aurora & Floating AI Background Sequence */}
+          <div className="absolute inset-0 z-0">
+            <AuroraBackground />
+            <FloatingAIIcons />
+          </div>
+
+          {/* Large Hero Section */}
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
             {/* Hero Left Content */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              <div className="inline-flex items-center space-x-2 px-2.5 py-1 bg-surface border border-border rounded-lg">
-                <Sparkles className="h-3.5 w-3.5 text-accent" />
-                <span className="text-[10px] font-medium text-foreground uppercase tracking-wider">
+            <motion.div
+              initial={reducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="lg:col-span-7 space-y-6 text-left"
+            >
+              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-surface border border-border rounded-lg shadow-sm">
+                <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
+                <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">
                   Next-Gen Business Intelligence
                 </span>
               </div>
 
-              <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-none">
-                Your data, <span className="text-accent">explained in plain English</span>
+              {/* Large modern heading with animated gradient text */}
+              <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.05]">
+                Your data, <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">explained in plain English</span>
               </h1>
 
               <p className="text-sm sm:text-base text-muted leading-relaxed max-w-xl font-normal">
                 Upload a spreadsheet and get instant dashboards, deeper statistical insights, and an AI analyst you can ask anything — all running securely in your browser.
               </p>
 
-              <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
+              <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                {/* Magnetic Button for Primary Action */}
+                <MagneticButton
                   onClick={scrollToUpload}
-                  className="flex items-center justify-center space-x-1.5 px-5 py-2.5 bg-accent hover:opacity-90 active:scale-95 text-white font-medium rounded-lg text-xs transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  className="flex items-center justify-center space-x-1.5 px-6 py-3 bg-accent text-white font-semibold rounded-lg text-xs shadow-md shadow-accent/20 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                 >
                   <span>Launch Workspace & Upload</span>
                   <ChevronDown className="h-3.5 w-3.5 mt-0.5" />
-                </button>
+                </MagneticButton>
+
                 <Link
                   href="/dashboards"
-                  className="flex items-center justify-center space-x-1.5 px-5 py-2.5 bg-surface hover:bg-surface-subtle text-foreground font-medium border border-border rounded-lg text-xs transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                  className="flex items-center justify-center space-x-1.5 px-6 py-3 bg-surface hover:bg-surface-subtle text-foreground font-semibold border border-border rounded-lg text-xs transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                 >
                   <span>View Saved Dashboards</span>
                 </Link>
               </div>
-            </div>
+            </motion.div>
 
             {/* Hero Right Preview Animation */}
-            <div className="lg:col-span-5 flex justify-center">
+            <motion.div
+              initial={reducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+              className="lg:col-span-5 flex justify-center relative z-10"
+            >
               <MiniDashboardPreview reducedMotion={reducedMotion} />
-            </div>
+            </motion.div>
           </section>
 
-          {/* "How It Works" Section */}
-          <section id="how-it-works" className="pt-16 border-t border-border scroll-mt-24 space-y-10">
+          {/* "How It Works" Section with Glassmorphic Cards & Local Glow */}
+          <section id="how-it-works" className="pt-16 border-t border-border/60 scroll-mt-24 space-y-12 relative z-10">
             <div className="text-center space-y-2">
               <span className="text-[9px] uppercase font-bold text-accent tracking-widest block">Core Workflow</span>
-              <h2 className="font-sans text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 How InsightLoop Works
               </h2>
-              <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm text-muted max-w-sm mx-auto leading-relaxed">
                 Unlock advanced analytics and query datasets natively in your browser in under 10 seconds.
               </p>
             </div>
@@ -766,14 +750,17 @@ function HomeContent() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Step 1: Upload */}
               <ScrollRevealCard index={0} reducedMotion={reducedMotion}>
-                <div className="bg-surface border border-border p-6 rounded-lg h-full flex flex-col space-y-4 hover:border-text-secondary transition duration-200 relative group overflow-hidden shadow-sm">
+                <div
+                  onMouseMove={trackCardGlow}
+                  className="glass-card glow-card border border-border p-6 rounded-xl h-full flex flex-col space-y-4 hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden shadow-sm hover:shadow-md"
+                >
                   <div className="absolute top-4 right-4 text-3xl font-sans font-extrabold text-border opacity-20 select-none">
                     01
                   </div>
-                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent">
+                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
                     <Upload className="h-4.5 w-4.5" />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5 z-10">
                     <h3 className="text-sm font-bold text-foreground">1. Secure Upload</h3>
                     <p className="text-xs text-muted leading-relaxed font-normal">
                       Drop in any CSV or Excel file. Your dataset is parsed entirely client-side and remains strictly private in your browser.
@@ -784,14 +771,17 @@ function HomeContent() {
 
               {/* Step 2: Analyze */}
               <ScrollRevealCard index={1} reducedMotion={reducedMotion}>
-                <div className="bg-surface border border-border p-6 rounded-lg h-full flex flex-col space-y-4 hover:border-text-secondary transition duration-200 relative group overflow-hidden shadow-sm">
+                <div
+                  onMouseMove={trackCardGlow}
+                  className="glass-card glow-card border border-border p-6 rounded-xl h-full flex flex-col space-y-4 hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden shadow-sm hover:shadow-md"
+                >
                   <div className="absolute top-4 right-4 text-3xl font-sans font-extrabold text-border opacity-20 select-none">
                     02
                   </div>
-                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent">
+                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
                     <Compass className="h-4.5 w-4.5" />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5 z-10">
                     <h3 className="text-sm font-bold text-foreground">2. Instant Analysis</h3>
                     <p className="text-xs text-muted leading-relaxed font-normal">
                       Generate responsive dashboards, execute raw browser-based SQL, and run advanced serverless statistical trend forecasting.
@@ -802,14 +792,17 @@ function HomeContent() {
 
               {/* Step 3: Ask */}
               <ScrollRevealCard index={2} reducedMotion={reducedMotion}>
-                <div className="bg-surface border border-border p-6 rounded-lg h-full flex flex-col space-y-4 hover:border-text-secondary transition duration-200 relative group overflow-hidden shadow-sm">
+                <div
+                  onMouseMove={trackCardGlow}
+                  className="glass-card glow-card border border-border p-6 rounded-xl h-full flex flex-col space-y-4 hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden shadow-sm hover:shadow-md"
+                >
                   <div className="absolute top-4 right-4 text-3xl font-sans font-extrabold text-border opacity-20 select-none">
                     03
                   </div>
-                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent">
+                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
                     <MessageSquare className="h-4.5 w-4.5" />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5 z-10">
                     <h3 className="text-sm font-bold text-foreground">3. Conversational AI</h3>
                     <p className="text-xs text-muted leading-relaxed font-normal">
                       Chat with a smart AI analyst that translates plain English instructions into raw SQL queries and executes them in real-time.
@@ -821,7 +814,7 @@ function HomeContent() {
           </section>
 
           {/* Subtle trust stack bar */}
-          <section className="flex flex-col items-center justify-center space-y-2 pt-6 select-none border-t border-border">
+          <section className="flex flex-col items-center justify-center space-y-3 pt-6 select-none border-t border-border/60 relative z-10">
             <span className="text-[9px] uppercase font-bold text-muted tracking-widest flex items-center gap-1.5">
               <Cpu className="h-3 w-3 text-accent" />
               <span>Technical Engine Stack</span>
@@ -844,10 +837,10 @@ function HomeContent() {
             </div>
           </section>
 
-          {/* Upload Zone Section */}
-          <div id="upload-zone" className="max-w-4xl mx-auto space-y-6 pt-16 border-t border-border scroll-mt-24">
+          {/* Upload Zone Section with Glassmorphic design */}
+          <div id="upload-zone" className="max-w-4xl mx-auto space-y-6 pt-16 border-t border-border/60 scroll-mt-24 relative z-10">
             <div className="text-center space-y-2">
-              <h2 className="font-sans text-xl font-bold text-foreground tracking-tight">
+              <h2 className="font-sans text-xl sm:text-2xl font-bold text-foreground tracking-tight">
                 Upload your data
               </h2>
               <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
@@ -860,10 +853,10 @@ function HomeContent() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={triggerFileBrowser}
-              className={`border border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center space-y-4 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
+              className={`border border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center space-y-4 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
                 isDragging
-                  ? "border-accent bg-surface-subtle scale-[0.99]"
-                  : "border-border hover:border-text-secondary bg-surface hover:bg-surface-subtle"
+                  ? "border-accent bg-surface-subtle scale-[0.99] shadow-inner"
+                  : "border-border hover:border-text-secondary glass-card hover:bg-surface-subtle/30 shadow-sm hover:shadow-md"
               }`}
               tabIndex={0}
               onKeyDown={(e) => {
@@ -881,25 +874,25 @@ function HomeContent() {
                 className="hidden"
               />
 
-              <div className="h-12 w-12 rounded-lg bg-surface border border-border flex items-center justify-center text-accent">
+              <div className="h-12 w-12 rounded-lg bg-surface border border-border flex items-center justify-center text-accent shadow-sm">
                 <Upload className="h-5 w-5" />
               </div>
 
               <div className="space-y-1">
                 <p className="text-sm font-bold text-foreground">Drag & drop your spreadsheet here</p>
                 <p className="text-xs text-muted">
-                  or <span className="text-accent hover:underline font-medium transition-colors">browse your files</span>
+                  or <span className="text-accent hover:underline font-semibold transition-colors">browse your files</span>
                 </p>
               </div>
 
-              <p className="text-[10px] text-muted/60 font-semibold uppercase tracking-wider">
+              <p className="text-[10px] text-muted/60 font-bold uppercase tracking-wider">
                 Accepts .CSV, .XLSX, or .XLS • Max 5MB
               </p>
             </div>
 
             {/* Loader */}
             {isPending && (
-              <div className="flex items-center justify-center space-x-2.5 p-4 bg-surface border border-border rounded-lg">
+              <div className="flex items-center justify-center space-x-2.5 p-4 bg-surface border border-border rounded-xl shadow-sm">
                 <RefreshCw className="h-4 w-4 text-accent animate-spin" />
                 <span className="text-xs text-muted font-semibold">Parsing and analyzing dataset columns...</span>
               </div>
@@ -907,7 +900,7 @@ function HomeContent() {
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-start space-x-2.5 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg animate-fade-in">
+              <div className="flex items-start space-x-2.5 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl animate-fade-in">
                 <AlertCircle className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-rose-600">Unable to Parse File</p>
@@ -932,7 +925,7 @@ function HomeContent() {
           </div>
           <button
             onClick={handleClear}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-surface hover:bg-surface-subtle text-rose-500 border border-border rounded-lg text-xs transition-all font-medium focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="flex items-center space-x-1.5 px-4 py-2 bg-surface hover:bg-surface-subtle text-rose-500 border border-border rounded-lg text-xs transition-all font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Trash2 className="h-3.5 w-3.5" />
             <span>Clear / Upload New</span>
@@ -942,18 +935,18 @@ function HomeContent() {
 
       {/* Parsed Output / Preview Panel */}
       {parsedData && (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in relative z-10">
           {/* File summary bar */}
-          <div className="bg-surface border border-border p-4 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="bg-surface border border-border p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 rounded-lg bg-surface border border-border flex items-center justify-center flex-shrink-0">
                 <FileSpreadsheet className="h-5 w-5 text-success" />
               </div>
               <div>
-                <h3 className="font-sans font-semibold text-foreground text-sm leading-tight truncate max-w-md">
+                <h3 className="font-sans font-bold text-foreground text-sm leading-tight truncate max-w-md">
                   {parsedData.fileName}
                 </h3>
-                <p className="text-[10px] text-muted mt-1">
+                <p className="text-[10px] text-muted mt-1 font-medium">
                   Size: {formatBytes(parsedData.fileSize)}
                 </p>
               </div>
@@ -977,7 +970,7 @@ function HomeContent() {
           </div>
 
           {/* Table Container */}
-          <div className="bg-surface border border-border rounded-lg overflow-hidden flex flex-col">
+          <div className="bg-surface border border-border rounded-xl overflow-hidden flex flex-col shadow-sm">
             <button
               onClick={() => setIsPreviewCollapsed(!isPreviewCollapsed)}
               className="px-5 py-3.5 border-b border-border flex items-center justify-between hover:bg-surface-subtle transition-all text-left w-full outline-none focus-visible:bg-surface-subtle"
@@ -986,7 +979,7 @@ function HomeContent() {
                 <TableProperties className="h-4 w-4 text-accent" />
                 <span className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Data Preview (First 20 Rows)</span>
                 {isPreviewCollapsed && (
-                  <span className="text-[9px] bg-background border border-border text-muted font-medium px-1.5 py-0.5 rounded ml-2">
+                  <span className="text-[9px] bg-background border border-border text-muted font-bold px-1.5 py-0.5 rounded ml-2">
                     Collapsed
                   </span>
                 )}
@@ -1008,9 +1001,7 @@ function HomeContent() {
                             key={col.columnName}
                             className="px-5 py-3 font-semibold text-xs align-top border-r border-border last:border-r-0 min-w-[200px]"
                           >
-                            {/* Interactive schema header */}
                             <div className="flex flex-col space-y-2.5">
-                              {/* Type dropdown override */}
                               <div className="flex items-center justify-between">
                                 <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-background border border-border text-[9px] font-bold uppercase text-muted">
                                   {getTypeIcon(col.currentType)}
@@ -1020,7 +1011,7 @@ function HomeContent() {
                                 <select
                                   value={col.currentType}
                                   onChange={(e) => handleTypeOverride(col.columnName, e.target.value as ColumnType)}
-                                  className="text-[9px] bg-background border border-border hover:border-text-secondary text-muted hover:text-foreground rounded px-1.5 py-0.5 font-medium outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                                  className="text-[9px] bg-background border border-border hover:border-text-secondary text-muted hover:text-foreground rounded px-1.5 py-0.5 font-semibold outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                                 >
                                   <option value="text">📝 text</option>
                                   <option value="number">🔢 number</option>
@@ -1030,12 +1021,10 @@ function HomeContent() {
                                 </select>
                               </div>
 
-                              {/* Original Display Name */}
                               <span className="text-xs font-bold text-foreground tracking-wide block truncate" title={col.displayName}>
                                 {col.displayName}
                               </span>
 
-                              {/* Stats metadata */}
                               <div className="flex flex-col space-y-1 text-[9px] text-muted border-t border-border/60 pt-2 font-normal">
                                 <div className="flex justify-between">
                                   <span>Detected:</span>
@@ -1043,7 +1032,7 @@ function HomeContent() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span>Uniqueness:</span>
-                                  <span className="text-foreground">
+                                  <span className="text-foreground font-semibold">
                                     {col.totalCount > 0
                                       ? `${col.uniqueCount} (${((col.uniqueCount / col.totalCount) * 100).toFixed(0)}%)`
                                       : "0 (0%)"}
@@ -1083,7 +1072,7 @@ function HomeContent() {
                                 className="px-5 py-3 text-xs border-r border-border last:border-r-0 max-w-[280px] truncate"
                               >
                                 {displayCell !== "" ? (
-                                  <span className="text-foreground font-medium">{displayCell}</span>
+                                  <span className="text-foreground font-semibold">{displayCell}</span>
                                 ) : (
                                   <span className="text-muted/40 italic">null</span>
                                 )}
@@ -1096,7 +1085,7 @@ function HomeContent() {
                   </table>
                 </div>
 
-                <div className="px-5 py-3 border-t border-border bg-background/30 flex justify-between items-center text-[10px] text-muted font-medium">
+                <div className="px-5 py-3 border-t border-border bg-background/30 flex justify-between items-center text-[10px] text-muted font-bold">
                   <span>Showing {Math.min(20, parsedData.rawRows.length)} of {parsedData.rawRows.length.toLocaleString()} rows</span>
                   {parsedData.rawRows.length > 20 && (
                     <span>Remaining {parsedData.rawRows.length - 20} rows omitted from preview.</span>
@@ -1113,7 +1102,7 @@ function HomeContent() {
                 <LayoutDashboard className="h-4.5 w-4.5" />
               </div>
               <div>
-                <h2 className="font-sans text-sm font-bold text-foreground uppercase tracking-wider">Interactive Analytics Dashboard</h2>
+                <h2 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Interactive Analytics Dashboard</h2>
                 <p className="text-[10px] text-muted mt-0.5 font-normal">Automatically generated insights and trends based on your file&apos;s schema.</p>
               </div>
             </div>
@@ -1148,7 +1137,7 @@ function HomeContent() {
           </div>
 
           {/* 🛠️ Debug SQL Console */}
-          <div className="bg-surface border border-border rounded-lg overflow-hidden flex flex-col">
+          <div className="bg-surface border border-border rounded-xl overflow-hidden flex flex-col shadow-sm">
             <button
               onClick={() => setIsConsoleCollapsed(!isConsoleCollapsed)}
               className="px-5 py-4 flex items-center justify-between hover:bg-surface-subtle transition-all text-left w-full outline-none focus-visible:bg-surface-subtle"
@@ -1161,7 +1150,7 @@ function HomeContent() {
                   <div className="flex items-center space-x-2">
                     <h2 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Debug SQL Console</h2>
                     {isConsoleCollapsed && (
-                      <span className="text-[9px] bg-background border border-border text-muted font-medium px-1.5 py-0.5 rounded">
+                      <span className="text-[9px] bg-background border border-border text-muted font-bold px-1.5 py-0.5 rounded">
                         Collapsed
                       </span>
                     )}
@@ -1181,7 +1170,7 @@ function HomeContent() {
                   <div className="text-[10px] text-muted">
                     Interact directly with DuckDB using raw SQL.
                   </div>
-                  <div className="flex items-center space-x-1.5 bg-background border border-border px-2.5 py-1 rounded-lg text-[10px] font-medium self-start sm:self-auto">
+                  <div className="flex items-center space-x-1.5 bg-background border border-border px-2.5 py-1 rounded-lg text-[10px] font-semibold self-start sm:self-auto">
                     {dbLoading ? (
                       <>
                         <RefreshCw className="h-3 w-3 text-accent animate-spin" />
@@ -1262,7 +1251,7 @@ function HomeContent() {
                     type="button"
                     onClick={() => handleRunQuery()}
                     disabled={queryRunning || dbLoading || syncStatus.loading}
-                    className="flex items-center justify-center space-x-1.5 px-4 py-2 bg-accent hover:opacity-90 disabled:opacity-40 text-white font-medium rounded-lg text-xs transition-colors disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                    className="flex items-center justify-center space-x-1.5 px-4 py-2 bg-accent hover:opacity-90 disabled:opacity-40 text-white font-semibold rounded-lg text-xs transition-colors disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
                   >
                     {queryRunning ? (
                       <>
@@ -1294,7 +1283,7 @@ function HomeContent() {
                   <div className="space-y-3 animate-fade-in">
                     <div className="flex items-center justify-between">
                       <span className="text-[9px] font-bold uppercase tracking-wider text-muted">Query Output</span>
-                      <span className="text-[10px] text-success font-medium bg-success/10 px-2 py-0.5 border border-success/20 rounded-lg">
+                      <span className="text-[10px] text-success font-semibold bg-success/10 px-2 py-0.5 border border-success/20 rounded-lg">
                         Returned {queryResults.length.toLocaleString()} row{queryResults.length === 1 ? "" : "s"}
                       </span>
                     </div>

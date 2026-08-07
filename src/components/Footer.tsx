@@ -2,56 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { Mail, Globe, ArrowUpRight, Sparkles, Database, BarChart3 } from "lucide-react";
+import { Mail, Globe, ArrowUpRight } from "lucide-react";
 
 export default function Footer() {
-  const techBadges = [
-    {
-      name: "Next.js",
-      color: "text-foreground",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M8 16V8l8 8" />
-          <path d="M16 8v8" />
-        </svg>
-      ),
-    },
-    {
-      name: "TypeScript",
-      color: "text-accent",
-      icon: (
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5">
-          <rect x="3" y="3" width="18" height="18" rx="2" fill="var(--bg)" stroke="currentColor" strokeWidth="1.5" />
-          <text x="6" y="15" fill="currentColor" fontSize="10" fontWeight="bold" fontFamily="monospace">
-            TS
-          </text>
-        </svg>
-      ),
-    },
-    {
-      name: "Gemini API",
-      color: "text-foreground",
-      icon: <Sparkles className="h-3.5 w-3.5" />,
-    },
-    {
-      name: "Supabase",
-      color: "text-foreground",
-      icon: <Database className="h-3.5 w-3.5" />,
-    },
-    {
-      name: "DuckDB-WASM",
-      color: "text-foreground",
-      icon: <BarChart3 className="h-3.5 w-3.5" />,
-    },
-  ];
-
   return (
     <footer className="w-full border-t border-border bg-background text-muted py-12 px-6 select-none relative overflow-hidden">
       <div className="max-w-7xl mx-auto space-y-10 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Brand/Tagline Block */}
-          <div className="lg:col-span-6 space-y-4">
+          <div className="lg:col-span-8 space-y-4">
             <Link
               href="/"
               className="inline-flex items-center space-x-2.5 hover:opacity-90 transition group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-lg p-1"
@@ -88,7 +47,7 @@ export default function Footer() {
               </span>
             </Link>
 
-            <p className="text-xs font-normal max-w-md leading-relaxed text-muted">
+            <p className="text-xs font-normal max-w-xl leading-relaxed text-muted">
               Secure, AI-powered business intelligence directly in your browser. Upload spreadsheets, run local DuckDB analytics, and converse with an AI co-pilot instantly.
             </p>
 
@@ -101,7 +60,7 @@ export default function Footer() {
                 href="https://ahmad-khan-build-ship-iterate-xi.vercel.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-surface hover:bg-surface-subtle border border-border rounded-lg transition-colors text-xs font-medium text-foreground group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-surface hover:bg-surface-subtle border border-border rounded-lg transition-colors text-xs font-semibold text-foreground group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
                 <span>Ahmad Khan — Portfolio</span>
                 <ArrowUpRight className="h-3.5 w-3.5 text-muted group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -109,14 +68,13 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Right Side compact grid */}
-          <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-8 lg:pl-8">
-            {/* Quick Links */}
+          {/* Right Side navigation links only (badges removed) */}
+          <div className="lg:col-span-4 lg:pl-8 flex flex-col justify-start">
             <div className="space-y-3">
               <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
                 Navigation
               </h4>
-              <nav className="flex flex-col space-y-2 text-xs font-medium">
+              <nav className="flex flex-col space-y-2.5 text-xs font-semibold">
                 <Link
                   href="/"
                   className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
@@ -139,24 +97,6 @@ export default function Footer() {
                   <ArrowUpRight className="h-3 w-3" />
                 </a>
               </nav>
-            </div>
-
-            {/* Built With Badges */}
-            <div className="space-y-3">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
-                Built With
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {techBadges.map((tech) => (
-                  <div
-                    key={tech.name}
-                    className="flex items-center space-x-1.5 px-2 py-1 bg-surface border border-border rounded-lg text-[10px] font-medium text-foreground"
-                  >
-                    <div className={`${tech.color} shrink-0`}>{tech.icon}</div>
-                    <span>{tech.name}</span>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -203,7 +143,7 @@ export default function Footer() {
               <Mail className="h-3.5 w-3.5" />
             </a>
 
-            <div className="text-[10px] text-muted/50 font-medium pl-3 border-l border-border">
+            <div className="text-[10px] text-muted/50 font-semibold pl-3 border-l border-border">
               © {new Date().getFullYear()} InsightLoop. Ahmad Khan.
             </div>
           </div>

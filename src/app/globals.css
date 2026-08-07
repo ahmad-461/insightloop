@@ -3,36 +3,36 @@
 @tailwind utilities;
 
 :root {
-  --bg: #ffffff;
-  --surface: #fafafa;
-  --surface-subtle: #f3f4f6;
-  --surface-hover: #f3f4f6;
-  --border: #e5e7eb;
-  --text-primary: #0a0a0a;
-  --text-secondary: #6b7280;
-  --accent: #2563eb;
-  --success: #059669;
-  --warning: #d97706;
+  --bg: #F8F5EF;
+  --surface: #FFFFFF;
+  --surface-subtle: #FDFBF8;
+  --surface-hover: #F6F2E9;
+  --border: #E8E1D6;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --accent: #2563EB;
+  --success: #10B981;
+  --warning: #F59E0B;
 }
 
 .dark {
-  --bg: #0a0a0a;
-  --surface: #111111;
-  --surface-subtle: #1a1a1a;
-  --surface-hover: #1a1a1a;
-  --border: #262626;
-  --text-primary: #fafafa;
-  --text-secondary: #a3a3a3;
-  --accent: #3b82f6;
-  --success: #10b981;
-  --warning: #f59e0b;
+  --bg: #121110;
+  --surface: #1E1C1A;
+  --surface-subtle: #151413;
+  --surface-hover: #262321;
+  --border: #2E2A27;
+  --text-primary: #F5F3F1;
+  --text-secondary: #A8A29E;
+  --accent: #3B82F6;
+  --success: #10B981;
+  --warning: #F59E0B;
 }
 
 /* Ensure smooth theme transitions for a polished premium feel */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
+  transition-duration: 200ms;
 }
 
 html,
@@ -40,6 +40,7 @@ body {
   background-color: var(--bg);
   color: var(--text-primary);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Custom scrollbar matching the premium minimal design */
@@ -59,4 +60,99 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(232, 225, 214, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+}
+
+.dark .glass-card {
+  background-color: rgba(30, 28, 26, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(46, 42, 39, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Local Card Glow Interaction */
+.glow-card {
+  position: relative;
+}
+.glow-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  background: radial-gradient(400px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(37, 99, 235, 0.07), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.dark .glow-card::before {
+  background: radial-gradient(400px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(59, 130, 246, 0.11), transparent 50%);
+}
+.glow-card:hover::before {
+  opacity: 1;
+}
+
+/* Noise Texture Overlay */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  content: "";
+  opacity: 0.012; /* extremely subtle premium paper finish */
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.dark .noise-overlay {
+  opacity: 0.022; /* slightly more visible on dark warm surface */
+}
+
+/* PDF Export Safeguards */
+.pdf-export-mode,
+.pdf-export-mode * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+.pdf-export-mode .glass-card {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.pdf-export-mode .noise-overlay,
+.pdf-export-mode .cursor-glow,
+.pdf-export-mode .aurora-container,
+.pdf-export-mode .floating-ai-icon {
+  display: none !important;
+}
+
+/* Ripple Click Animation */
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+.animate-ripple {
+  animation: ripple 0.6s linear forwards;
 }
