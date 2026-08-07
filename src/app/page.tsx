@@ -24,7 +24,6 @@ import {
   ChevronUp,
   LayoutDashboard,
   XCircle,
-  Sparkles,
   MessageSquare,
   Compass,
   Cpu
@@ -42,12 +41,13 @@ import { useDuckDB } from "@/context/DuckDBContext";
 import Dashboard from "@/components/Dashboard";
 import ChatPanel from "@/components/ChatPanel";
 import AdvancedInsights from "@/components/AdvancedInsights";
+import OSMenuBar from "@/components/OSMenuBar";
+import BootSequence from "@/components/BootSequence";
+import DesktopWindows from "@/components/DesktopWindows";
 import { supabase } from "@/utils/supabaseClient";
-import Link from "next/link";
 import {
   AuroraBackground,
   FloatingAIIcons,
-  MagneticButton,
   useLocalGlow
 } from "@/components/PremiumEffects";
 
@@ -80,166 +80,13 @@ function ScrollRevealCard({
   );
 }
 
-function MiniDashboardPreview({ reducedMotion }: { reducedMotion: boolean }) {
-  const [count, setCount] = useState(0);
-  const [chatStep, setChatStep] = useState(0);
-
-  // KPI counter logic
-  useEffect(() => {
-    if (reducedMotion) {
-      setCount(48250);
-      return;
-    }
-    const duration = 1500;
-    const start = 0;
-    const end = 48250;
-    const stepTime = 25;
-    const totalSteps = duration / stepTime;
-    const increment = end / totalSteps;
-    let current = start;
-
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= end) {
-        setCount(end);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, stepTime);
-
-    return () => clearInterval(timer);
-  }, [reducedMotion]);
-
-  // Chat conversation sequence loop
-  useEffect(() => {
-    if (reducedMotion) {
-      setChatStep(3); // immediately show complete conversation
-      return;
-    }
-    const interval = setInterval(() => {
-      setChatStep((prev) => (prev + 1) % 4);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [reducedMotion]);
-
-  return (
-    <div className="relative w-full max-w-lg bg-surface border border-border rounded-xl overflow-hidden select-none shadow-md hover:shadow-xl transition-shadow duration-300">
-      {/* OS Titlebar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-surface-subtle border-b border-border">
-        <div className="flex items-center space-x-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-        </div>
-        <span className="text-[10px] font-sans font-semibold tracking-wider text-muted uppercase">
-          InsightLoop AI Sandbox
-        </span>
-        <div className="w-10" />
-      </div>
-
-      <div className="p-4 space-y-4">
-        {/* KPI Row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-background border border-border p-3 rounded-lg">
-            <span className="text-[9px] uppercase font-bold text-muted block tracking-wider">Active Deals</span>
-            <span className="text-base font-bold text-foreground mt-1 block">142</span>
-          </div>
-          <div className="bg-background border border-border p-3 rounded-lg">
-            <span className="text-[9px] uppercase font-bold text-muted block tracking-wider">Total Sales</span>
-            <span className="text-base font-bold text-accent mt-1 block font-mono">
-              ${count.toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        {/* SVG Drawing Chart */}
-        <div className="bg-background border border-border p-3 rounded-lg h-36 flex flex-col justify-between">
-          <span className="text-[9px] uppercase font-bold text-muted block tracking-wider">Revenue Trend</span>
-          <div className="relative flex-1 flex items-end justify-center w-full mt-2">
-            <svg viewBox="0 0 400 100" className="w-full h-full">
-              {/* Grid Lines */}
-              <line x1="0" y1="20" x2="400" y2="20" stroke="var(--border)" strokeWidth="1" strokeDasharray="3 3" />
-              <line x1="0" y1="50" x2="400" y2="50" stroke="var(--border)" strokeWidth="1" strokeDasharray="3 3" />
-              <line x1="0" y1="80" x2="400" y2="80" stroke="var(--border)" strokeWidth="1" strokeDasharray="3 3" />
-
-              {/* Minimal Line Path */}
-              <path
-                d="M 10 90 Q 60 20 110 70 T 210 30 T 310 80 T 390 10"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                className={reducedMotion ? "" : "animate-draw-path"}
-                style={{
-                  strokeDasharray: 400,
-                  strokeDashoffset: reducedMotion ? 0 : 400,
-                }}
-              />
-
-              {/* Data points */}
-              <circle cx="110" cy="70" r="3" fill="var(--accent)" />
-              <circle cx="210" cy="30" r="3" fill="var(--accent)" />
-              <circle cx="390" cy="10" r="3" fill="var(--success)" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Animated Conversation State */}
-        <div className="bg-surface-subtle border border-border rounded-lg p-3 min-h-[76px] flex flex-col justify-center space-y-2">
-          {/* User question */}
-          {chatStep >= 1 && (
-            <div className="flex items-start space-x-2 animate-fade-in">
-              <div className="w-5 h-5 rounded bg-surface border border-border text-foreground flex items-center justify-center text-[9px] font-medium shrink-0">
-                U
-              </div>
-              <p className="text-[10px] text-foreground leading-relaxed bg-surface border border-border px-2.5 py-1 rounded-lg font-medium">
-                What was our top category by sales?
-              </p>
-            </div>
-          )}
-
-          {/* AI Thinking */}
-          {chatStep === 2 && (
-            <div className="flex items-center space-x-2 text-muted pl-1">
-              <span className="text-[9px] font-bold uppercase tracking-wider">AI is thinking...</span>
-              <div className="flex space-x-1">
-                <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1 h-1 bg-muted rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          )}
-
-          {/* AI Response */}
-          {chatStep === 3 && (
-            <div className="flex items-start space-x-2 animate-fade-in">
-              <div className="w-5 h-5 rounded bg-accent text-white flex items-center justify-center text-[9px] font-medium shrink-0">
-                AI
-              </div>
-              <p className="text-[10px] text-muted leading-relaxed bg-surface border border-border px-2.5 py-1 rounded-lg">
-                <span className="font-semibold text-foreground">Electronics</span> was the top category, generating <span className="text-success font-semibold">$24,850</span> in sales.
-              </p>
-            </div>
-          )}
-
-          {chatStep === 0 && (
-            <div className="text-center py-2 text-[10px] text-muted font-medium italic">
-              Ask questions to your AI Data Analyst...
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const reactivateId = searchParams ? searchParams.get("reactivate") : null;
   const scrollParam = searchParams ? searchParams.get("scroll") : null;
 
+  const [hasBooted, setHasBooted] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -276,6 +123,23 @@ function HomeContent() {
     return () => mediaQuery.removeEventListener("change", listener);
   }, []);
 
+  // Sync boot sequence state on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const booted = sessionStorage.getItem("insightloop_os_booted");
+      if (booted === "true") {
+        setHasBooted(true);
+      }
+    }
+  }, []);
+
+  const handleBootComplete = () => {
+    setHasBooted(true);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("insightloop_os_booted", "true");
+    }
+  };
+
   // Local glow effect tracker hook
   const { handleMouseMove: trackCardGlow } = useLocalGlow();
 
@@ -293,10 +157,6 @@ function HomeContent() {
     }
   }, [scrollParam, router, reducedMotion]);
 
-  // Smooth scroll down to file upload container
-  const scrollToUpload = () => {
-    document.getElementById("upload-zone")?.scrollIntoView({ behavior: "smooth" });
-  };
 
   // Automatically collapse preview when dashboard loaded
   const handleDashboardLoaded = () => {
@@ -618,7 +478,7 @@ function HomeContent() {
   ] : [];
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 space-y-12 relative z-10">
+    <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 space-y-12 relative z-10 pt-16">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes draw-path {
           from { stroke-dashoffset: 400; }
@@ -637,6 +497,19 @@ function HomeContent() {
           animation: fade-in 0.4s ease-out forwards;
         }
       `}} />
+
+      {/* Retro scanline overlay on home boot desktop */}
+      {!parsedData && (
+        <div className="pointer-events-none fixed inset-0 z-40 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px]" />
+      )}
+
+      {/* Boot Sequencer */}
+      {!hasBooted && !parsedData && (
+        <BootSequence onBootComplete={handleBootComplete} />
+      )}
+
+      {/* OS Menu bar replacement */}
+      <OSMenuBar onClearDataset={handleClear} datasetActive={!!parsedData} />
 
       {/* REACTIVATION INFO BOX */}
       {reactivateId && targetDashboard && !parsedData && (
@@ -680,60 +553,24 @@ function HomeContent() {
             <FloatingAIIcons />
           </div>
 
-          {/* Large Hero Section */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-            {/* Hero Left Content */}
-            <motion.div
-              initial={reducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="lg:col-span-7 space-y-6 text-left"
-            >
-              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-surface border border-border rounded-lg shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
-                <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">
-                  Next-Gen Business Intelligence
-                </span>
-              </div>
+          {/* Desktop OS Windows Metaphor Workspace (replaces old Hero layout) */}
+          <DesktopWindows
+            isDragging={isDragging}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onBrowseClick={triggerFileBrowser}
+            isPending={isPending}
+            error={error}
+          />
 
-              {/* Large modern heading with animated gradient text */}
-              <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.05]">
-                Your data, <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">explained in plain English</span>
-              </h1>
-
-              <p className="text-sm sm:text-base text-muted leading-relaxed max-w-xl font-normal">
-                Upload a spreadsheet and get instant dashboards, deeper statistical insights, and an AI analyst you can ask anything — all running securely in your browser.
-              </p>
-
-              <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                {/* Magnetic Button for Primary Action */}
-                <MagneticButton
-                  onClick={scrollToUpload}
-                  className="flex items-center justify-center space-x-1.5 px-6 py-3 bg-accent text-white font-semibold rounded-lg text-xs shadow-md shadow-accent/20 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <span>Launch Workspace & Upload</span>
-                  <ChevronDown className="h-3.5 w-3.5 mt-0.5" />
-                </MagneticButton>
-
-                <Link
-                  href="/dashboards"
-                  className="flex items-center justify-center space-x-1.5 px-6 py-3 bg-surface hover:bg-surface-subtle text-foreground font-semibold border border-border rounded-lg text-xs transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <span>View Saved Dashboards</span>
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Hero Right Preview Animation */}
-            <motion.div
-              initial={reducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-              className="lg:col-span-5 flex justify-center relative z-10"
-            >
-              <MiniDashboardPreview reducedMotion={reducedMotion} />
-            </motion.div>
-          </section>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileInputChange}
+            accept=".csv,.xlsx,.xls"
+            className="hidden"
+          />
 
           {/* "How It Works" Section with Glassmorphic Cards & Local Glow */}
           <section id="how-it-works" className="pt-16 border-t border-border/60 scroll-mt-24 space-y-12 relative z-10">
@@ -836,85 +673,12 @@ function HomeContent() {
               </span>
             </div>
           </section>
-
-          {/* Upload Zone Section with Glassmorphic design */}
-          <div id="upload-zone" className="max-w-4xl mx-auto space-y-6 pt-16 border-t border-border/60 scroll-mt-24 relative z-10">
-            <div className="text-center space-y-2">
-              <h2 className="font-sans text-xl sm:text-2xl font-bold text-foreground tracking-tight">
-                Upload your data
-              </h2>
-              <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
-                CSV or Excel files are parsed securely in memory. Your raw rows never leave your computer.
-              </p>
-            </div>
-
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={triggerFileBrowser}
-              className={`border border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center space-y-4 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
-                isDragging
-                  ? "border-accent bg-surface-subtle scale-[0.99] shadow-inner"
-                  : "border-border hover:border-text-secondary glass-card hover:bg-surface-subtle/30 shadow-sm hover:shadow-md"
-              }`}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  triggerFileBrowser();
-                }
-              }}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileInputChange}
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-              />
-
-              <div className="h-12 w-12 rounded-lg bg-surface border border-border flex items-center justify-center text-accent shadow-sm">
-                <Upload className="h-5 w-5" />
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-foreground">Drag & drop your spreadsheet here</p>
-                <p className="text-xs text-muted">
-                  or <span className="text-accent hover:underline font-semibold transition-colors">browse your files</span>
-                </p>
-              </div>
-
-              <p className="text-[10px] text-muted/60 font-bold uppercase tracking-wider">
-                Accepts .CSV, .XLSX, or .XLS • Max 5MB
-              </p>
-            </div>
-
-            {/* Loader */}
-            {isPending && (
-              <div className="flex items-center justify-center space-x-2.5 p-4 bg-surface border border-border rounded-xl shadow-sm">
-                <RefreshCw className="h-4 w-4 text-accent animate-spin" />
-                <span className="text-xs text-muted font-semibold">Parsing and analyzing dataset columns...</span>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-start space-x-2.5 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl animate-fade-in">
-                <AlertCircle className="h-4 w-4 text-rose-500 mt-0.5 flex-shrink-0" />
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-rose-600">Unable to Parse File</p>
-                  <p className="text-xs text-muted leading-relaxed">{error}</p>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       )}
 
       {/* Active Workspace Header Bar */}
       {parsedData && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6 pt-6">
           <div>
             <h1 className="text-2xl font-sans font-bold tracking-tight text-foreground">
               Interactive Workspace

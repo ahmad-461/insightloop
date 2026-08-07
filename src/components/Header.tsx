@@ -17,20 +17,22 @@ export default function Header() {
 
   // Sync scroll state to trigger glassmorphism nav
   useEffect(() => {
+    if (pathname === "/") return;
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 15);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [pathname]);
 
   // Sync theme state on mount
   useEffect(() => {
+    if (pathname === "/") return;
     if (typeof window !== "undefined") {
       const isDark = document.documentElement.classList.contains("dark");
       setTheme(isDark ? "dark" : "light");
     }
-  }, []);
+  }, [pathname]);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -46,16 +48,18 @@ export default function Header() {
 
   // Check prefers-reduced-motion
   useEffect(() => {
+    if (pathname === "/") return;
     if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mediaQuery.matches);
     const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
     mediaQuery.addEventListener("change", listener);
     return () => mediaQuery.removeEventListener("change", listener);
-  }, []);
+  }, [pathname]);
 
   // Close drawer on escape key
   useEffect(() => {
+    if (pathname === "/") return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsDrawerOpen(false);
@@ -71,7 +75,14 @@ export default function Header() {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isDrawerOpen]);
+  }, [isDrawerOpen, pathname]);
+
+  // The OS/terminal menu bar is exclusive to the homepage.
+  // We keep the traditional header everywhere else.
+  if (pathname === "/") {
+    return null;
+  }
+
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     if (pathname === "/") {
