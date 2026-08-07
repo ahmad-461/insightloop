@@ -4,13 +4,22 @@ import React from "react";
 import Link from "next/link";
 import { Mail, Globe, ArrowUpRight } from "lucide-react";
 
+import { ArrowUp } from "lucide-react";
+
 export default function Footer() {
+  const scrollToTop = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
-    <footer className="w-full border-t border-border bg-background text-muted py-12 px-6 select-none relative overflow-hidden">
-      <div className="max-w-7xl mx-auto space-y-10 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Brand/Tagline Block */}
-          <div className="lg:col-span-8 space-y-4">
+    <footer className="w-full border-t border-border bg-gradient-to-b from-background to-surface/40 text-muted py-14 px-6 select-none relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-radial from-accent/5 via-transparent to-transparent pointer-events-none opacity-40" />
+      <div className="max-w-7xl mx-auto space-y-12 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
+          {/* Column 1: Company overview */}
+          <div className="lg:col-span-5 space-y-4">
             <Link
               href="/"
               className="inline-flex items-center space-x-2.5 hover:opacity-90 transition group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-lg p-1"
@@ -47,11 +56,10 @@ export default function Footer() {
               </span>
             </Link>
 
-            <p className="text-xs font-normal max-w-xl leading-relaxed text-muted">
+            <p className="text-xs font-normal max-w-sm leading-relaxed text-muted">
               Secure, AI-powered business intelligence directly in your browser. Upload spreadsheets, run local DuckDB analytics, and converse with an AI co-pilot instantly.
             </p>
 
-            {/* Portfolio credit styled as clean hairline secondary button */}
             <div className="pt-2">
               <span className="text-[10px] uppercase font-bold text-muted/60 tracking-wider block mb-2">
                 Engineering & Design
@@ -62,42 +70,107 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-surface hover:bg-surface-subtle border border-border rounded-lg transition-colors text-xs font-semibold text-foreground group focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               >
-                <span>Ahmad Khan — Portfolio</span>
+                <span>Built by Ahmad Khan</span>
                 <ArrowUpRight className="h-3.5 w-3.5 text-muted group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </a>
             </div>
           </div>
 
-          {/* Right Side navigation links only (badges removed) */}
-          <div className="lg:col-span-4 lg:pl-8 flex flex-col justify-start">
-            <div className="space-y-3">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
-                Navigation
-              </h4>
-              <nav className="flex flex-col space-y-2.5 text-xs font-semibold">
-                <Link
-                  href="/"
-                  className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/dashboards"
-                  className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
-                >
-                  My Dashboards
-                </Link>
-                <a
-                  href="https://github.com/ahmad-461/insightloop"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-1 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
-                >
-                  <span>GitHub Repository</span>
-                  <ArrowUpRight className="h-3 w-3" />
-                </a>
-              </nav>
-            </div>
+          {/* Column 2: Product Links */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
+              Product
+            </h4>
+            <nav className="flex flex-col space-y-2.5 text-xs font-semibold">
+              <Link
+                href="/"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                Home
+              </Link>
+              <Link
+                href="/dashboards"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                Dashboards
+              </Link>
+              <Link
+                href="/#how-it-works"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                How It Works
+              </Link>
+              <Link
+                href="/#upload-zone"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                Upload Data
+              </Link>
+            </nav>
+          </div>
+
+          {/* Column 3: Resources */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
+              Resources
+            </h4>
+            <nav className="flex flex-col space-y-2.5 text-xs font-semibold">
+              <a
+                href="https://github.com/ahmad-461/insightloop"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-1 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                <span>GitHub Repo</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </a>
+              <Link
+                href="/#built-with"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                Built With
+              </Link>
+              <a
+                href="https://github.com/ahmad-461/insightloop/blob/main/README.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-1 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                <span>Documentation</span>
+                <ArrowUpRight className="h-3 w-3" />
+              </a>
+            </nav>
+          </div>
+
+          {/* Column 4: Contact/Company */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-[10px] uppercase font-bold tracking-wider text-foreground">
+              Contact
+            </h4>
+            <nav className="flex flex-col space-y-2.5 text-xs font-semibold">
+              <a
+                href="mailto:ahmad.khan@example.com?subject=Inquiry%20about%20InsightLoop"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start truncate max-w-full"
+              >
+                ahmad.khan@example.com
+              </a>
+              <a
+                href="https://github.com/ahmad-461"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                GitHub Profile
+              </a>
+              <a
+                href="https://ahmad-khan-build-ship-iterate-xi.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded self-start"
+              >
+                Portfolio
+              </a>
+            </nav>
           </div>
         </div>
 
@@ -107,7 +180,7 @@ export default function Footer() {
             <p>Designed and built entirely client-side. All data rows remain local unless synced.</p>
           </div>
 
-          <div className="flex items-center space-x-3 text-xs">
+          <div className="flex items-center space-x-4 text-xs">
             {/* Social Icons */}
             <a
               href="https://github.com/ahmad-461"
@@ -136,12 +209,20 @@ export default function Footer() {
             </a>
 
             <a
-              href="mailto:contact@example.com"
+              href="mailto:ahmad.khan@example.com?subject=Inquiry%20about%20InsightLoop"
               className="p-1.5 text-muted hover:text-foreground hover:bg-surface border border-transparent hover:border-border rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
               title="Email Ahmad Khan"
             >
               <Mail className="h-3.5 w-3.5" />
             </a>
+
+            <button
+              onClick={scrollToTop}
+              className="p-1.5 text-muted hover:text-foreground hover:bg-surface border border-transparent hover:border-border rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none flex items-center justify-center"
+              title="Back to Top"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </button>
 
             <div className="text-[10px] text-muted/50 font-semibold pl-3 border-l border-border">
               © {new Date().getFullYear()} InsightLoop. Ahmad Khan.
