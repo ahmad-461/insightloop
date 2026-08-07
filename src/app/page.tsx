@@ -14,7 +14,6 @@ import {
   Type,
   Trash2,
   TableProperties,
-  Terminal,
   Play,
   CheckCircle,
   Server,
@@ -23,12 +22,24 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutDashboard,
-  XCircle,
   MessageSquare,
-  Compass,
-  Cpu
+  Cpu,
+  ShieldCheck,
+  UserCheck,
+  Zap,
+  ArrowRight,
+  FileDown,
+  TrendingUp
 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer
+} from "recharts";
 import {
   parseCSV,
   parseExcel,
@@ -41,15 +52,7 @@ import { useDuckDB } from "@/context/DuckDBContext";
 import Dashboard from "@/components/Dashboard";
 import ChatPanel from "@/components/ChatPanel";
 import AdvancedInsights from "@/components/AdvancedInsights";
-import OSMenuBar from "@/components/OSMenuBar";
-import BootSequence from "@/components/BootSequence";
-import DesktopWindows from "@/components/DesktopWindows";
 import { supabase } from "@/utils/supabaseClient";
-import {
-  AuroraBackground,
-  FloatingAIIcons,
-  useLocalGlow
-} from "@/components/PremiumEffects";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
@@ -65,13 +68,13 @@ function ScrollRevealCard({
 }) {
   return (
     <motion.div
-      initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+      initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
       whileInView={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
+      viewport={{ once: true, margin: "-80px" }}
       transition={
         reducedMotion
           ? { duration: 0 }
-          : { duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: index * 0.15 }
+          : { duration: 0.5, ease: "easeOut", delay: index * 0.1 }
       }
       className="h-full"
     >
@@ -80,13 +83,22 @@ function ScrollRevealCard({
   );
 }
 
+// Sample Data for Hero Dashboard Preview Chart
+const SAMPLE_CHART_DATA = [
+  { month: "Jan", sales: 14000, targets: 12000 },
+  { month: "Feb", sales: 19000, targets: 13500 },
+  { month: "Mar", sales: 26000, targets: 18000 },
+  { month: "Apr", sales: 34000, targets: 24000 },
+  { month: "May", sales: 42000, targets: 31000 },
+  { month: "Jun", sales: 51000, targets: 38000 },
+];
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const reactivateId = searchParams ? searchParams.get("reactivate") : null;
   const scrollParam = searchParams ? searchParams.get("scroll") : null;
 
-  const [hasBooted, setHasBooted] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -105,7 +117,7 @@ function HomeContent() {
   const [queryError, setQueryError] = useState<string | null>(null);
   const [queryRunning, setQueryRunning] = useState(false);
 
-  // Shared Dashboard ID state for Phase 7 Chat History Persistence
+  // Shared Dashboard ID state for Persisted Analytics
   const [dashboardId, setDashboardId] = useState<string | null>(null);
 
   // UI Panels collapsing states
@@ -123,26 +135,6 @@ function HomeContent() {
     return () => mediaQuery.removeEventListener("change", listener);
   }, []);
 
-  // Sync boot sequence state on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const booted = sessionStorage.getItem("insightloop_os_booted");
-      if (booted === "true") {
-        setHasBooted(true);
-      }
-    }
-  }, []);
-
-  const handleBootComplete = () => {
-    setHasBooted(true);
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("insightloop_os_booted", "true");
-    }
-  };
-
-  // Local glow effect tracker hook
-  const { handleMouseMove: trackCardGlow } = useLocalGlow();
-
   // Handle URL query parameters for scrolling on mount
   useEffect(() => {
     if (scrollParam) {
@@ -156,7 +148,6 @@ function HomeContent() {
       }, 300);
     }
   }, [scrollParam, router, reducedMotion]);
-
 
   // Automatically collapse preview when dashboard loaded
   const handleDashboardLoaded = () => {
@@ -478,7 +469,7 @@ function HomeContent() {
   ] : [];
 
   return (
-    <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 space-y-12 relative z-10 pt-16">
+    <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-12 space-y-16 relative z-10 pt-10">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes draw-path {
           from { stroke-dashoffset: 400; }
@@ -496,24 +487,15 @@ function HomeContent() {
         .animate-fade-in {
           animation: fade-in 0.4s ease-out forwards;
         }
+        .enterprise-dot-grid {
+          background-image: radial-gradient(var(--border) 1px, transparent 1px);
+          background-size: 20px 20px;
+        }
       `}} />
-
-      {/* Retro scanline overlay on home boot desktop */}
-      {!parsedData && (
-        <div className="pointer-events-none fixed inset-0 z-40 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px]" />
-      )}
-
-      {/* Boot Sequencer */}
-      {!hasBooted && !parsedData && (
-        <BootSequence onBootComplete={handleBootComplete} />
-      )}
-
-      {/* OS Menu bar replacement */}
-      <OSMenuBar onClearDataset={handleClear} datasetActive={!!parsedData} />
 
       {/* REACTIVATION INFO BOX */}
       {reactivateId && targetDashboard && !parsedData && (
-        <div className="bg-surface/80 backdrop-blur border border-border p-5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-3xl mx-auto animate-fade-in shadow-md">
+        <div className="bg-surface border border-border p-5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-3xl mx-auto animate-fade-in shadow-sm">
           <div className="flex items-start space-x-3">
             <RefreshCw className="h-5 w-5 text-accent mt-0.5 animate-spin flex-shrink-0" />
             <div className="space-y-1">
@@ -534,8 +516,8 @@ function HomeContent() {
 
       {/* REACTIVATION WARNING */}
       {reactivateWarning && (
-        <div className="bg-warning/10 border border-warning/30 p-4 rounded-xl flex items-start space-x-3 max-w-3xl mx-auto animate-fade-in text-warning">
-          <XCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex items-start space-x-3 max-w-3xl mx-auto animate-fade-in text-amber-600">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="text-xs font-bold text-foreground">Schema Mismatch Detected</p>
             <p className="text-xs text-muted leading-relaxed">{reactivateWarning}</p>
@@ -543,26 +525,141 @@ function HomeContent() {
         </div>
       )}
 
-      {/* Main Upload Area (when no file is successfully parsed) */}
+      {/* Main Corporate Hero Area (when no file is successfully parsed) */}
       {!parsedData && (
-        <div className="space-y-20 py-4 relative">
+        <div className="space-y-24">
 
-          {/* Beautiful Aurora & Floating AI Background Sequence */}
-          <div className="absolute inset-0 z-0">
-            <AuroraBackground />
-            <FloatingAIIcons />
+          {/* Hero Header & Upload Block with Dot-Grid Pattern */}
+          <div className="relative rounded-2xl border border-border bg-surface-subtle overflow-hidden enterprise-dot-grid py-12 md:py-20 px-6 md:px-12 shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-surface/40 pointer-events-none" />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+
+              {/* Left Column: Copy & Actions */}
+              <div className="lg:col-span-6 space-y-6 text-left">
+                <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-xs font-bold tracking-wide text-accent">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>Secure & Local Business Intelligence</span>
+                </span>
+
+                <h1 className="font-sans text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight leading-[1.1]">
+                  Business intelligence that runs in your browser
+                </h1>
+
+                <p className="text-sm md:text-base text-muted max-w-xl leading-relaxed">
+                  Upload your data and get instant dashboards, AI-powered analysis, and predictive insights — with your data never leaving your device.
+                </p>
+
+                {/* Main Upload Dropzone */}
+                <div id="upload-zone" className="pt-2">
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={triggerFileBrowser}
+                    className={`flex flex-col items-center justify-center p-8 text-center cursor-pointer border-2 rounded-xl transition-all duration-300 bg-surface ${
+                      isDragging
+                        ? "border-accent bg-accent/5 scale-[0.99] shadow-md"
+                        : "border-dashed border-border hover:border-accent hover:shadow-sm"
+                    }`}
+                  >
+                    <div className="h-12 w-12 bg-surface-subtle border border-border rounded-lg flex items-center justify-center text-accent shadow-sm mb-4">
+                      <Upload className="h-5 w-5" />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-bold text-foreground">
+                        Drag and drop your spreadsheet here
+                      </p>
+                      <p className="text-xs text-muted">
+                        or <span className="text-accent hover:underline font-semibold">browse files</span> on your system
+                      </p>
+                    </div>
+
+                    <p className="text-[10px] text-muted/80 mt-5 font-mono uppercase tracking-wider font-semibold">
+                      Supports CSV, XLSX, or XLS (Max 5MB)
+                    </p>
+
+                    {isPending && (
+                      <div className="mt-4 flex items-center space-x-2 text-xs text-accent">
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span>Processing columns safely in memory...</span>
+                      </div>
+                    )}
+
+                    {error && (
+                      <div className="mt-4 flex items-start space-x-2 text-left p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs text-rose-600 max-w-md">
+                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>{error}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Embedded Professional Screenshot Metaphor */}
+              <div className="lg:col-span-6">
+                <div className="bg-surface border border-border rounded-xl shadow-lg overflow-hidden flex flex-col h-[380px] text-left select-none">
+                  {/* Chrome window layout */}
+                  <div className="px-4 py-3 bg-surface-subtle border-b border-border flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="w-3 h-3 rounded-full bg-border" />
+                      <span className="w-3 h-3 rounded-full bg-border" />
+                      <span className="w-3 h-3 rounded-full bg-border" />
+                    </div>
+                    <span className="text-xs text-muted font-bold tracking-wide uppercase">InsightLoop Analyzer</span>
+                    <div className="w-8" />
+                  </div>
+
+                  {/* Mock Screenshot Content */}
+                  <div className="flex-1 p-5 flex flex-col justify-between bg-surface">
+                    {/* Mock KPIs */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="border border-border p-3 rounded-lg bg-surface-subtle">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Gross Sales</span>
+                        <span className="block text-lg font-extrabold text-foreground mt-1">$142,500.00</span>
+                      </div>
+                      <div className="border border-border p-3 rounded-lg bg-surface-subtle">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Active Users</span>
+                        <span className="block text-lg font-extrabold text-foreground mt-1">1,240</span>
+                      </div>
+                      <div className="border border-border p-3 rounded-lg bg-surface-subtle">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted">YOY Growth</span>
+                        <span className="block text-lg font-extrabold text-success mt-1">+18.4%</span>
+                      </div>
+                    </div>
+
+                    {/* Chart Container */}
+                    <div className="h-44 w-full text-[10px] mt-4 font-sans">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={SAMPLE_CHART_DATA} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                          <XAxis dataKey="month" stroke="var(--text-secondary)" tickLine={false} axisLine={false} dy={4} />
+                          <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={35} tickFormatter={(v) => `$${v / 1000}k`} />
+                          <defs>
+                            <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.15} />
+                              <stop offset="95%" stopColor="var(--accent)" stopOpacity={0.0} />
+                            </linearGradient>
+                          </defs>
+                          <Area type="monotone" dataKey="sales" stroke="var(--accent)" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="border-t border-border pt-3.5 flex items-center justify-between text-[11px] text-muted">
+                      <span className="flex items-center space-x-1">
+                        <CheckCircle className="h-3.5 w-3.5 text-success" />
+                        <span>Interactive preview matching active schema</span>
+                      </span>
+                      <span className="font-mono text-[9px] uppercase font-bold text-muted/60">Static Demo</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
-
-          {/* Desktop OS Windows Metaphor Workspace (replaces old Hero layout) */}
-          <DesktopWindows
-            isDragging={isDragging}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onBrowseClick={triggerFileBrowser}
-            isPending={isPending}
-            error={error}
-          />
 
           <input
             type="file"
@@ -572,104 +669,267 @@ function HomeContent() {
             className="hidden"
           />
 
-          {/* "How It Works" Section with Glassmorphic Cards & Local Glow */}
-          <section id="how-it-works" className="pt-16 border-t border-border/60 scroll-mt-24 space-y-12 relative z-10">
-            <div className="text-center space-y-2">
-              <span className="text-[9px] uppercase font-bold text-accent tracking-widest block">Core Workflow</span>
-              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                How InsightLoop Works
-              </h2>
-              <p className="text-xs sm:text-sm text-muted max-w-sm mx-auto leading-relaxed">
-                Unlock advanced analytics and query datasets natively in your browser in under 10 seconds.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Step 1: Upload */}
-              <ScrollRevealCard index={0} reducedMotion={reducedMotion}>
-                <div
-                  onMouseMove={trackCardGlow}
-                  className="glass-card glow-card border border-border p-6 rounded-xl h-full flex flex-col space-y-4 hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden shadow-sm hover:shadow-md"
-                >
-                  <div className="absolute top-4 right-4 text-3xl font-sans font-extrabold text-border opacity-20 select-none">
-                    01
-                  </div>
-                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
-                    <Upload className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5 z-10">
-                    <h3 className="text-sm font-bold text-foreground">1. Secure Upload</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Drop in any CSV or Excel file. Your dataset is parsed entirely client-side and remains strictly private in your browser.
-                    </p>
-                  </div>
+          {/* CREDIBILITY STRIP: Place immediately under hero block (first thing after fold) */}
+          <section className="bg-surface border border-border rounded-xl p-6 md:p-8 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start divide-y sm:divide-y-0 lg:divide-x divide-border">
+              {/* Item 1 */}
+              <div className="flex items-start space-x-3.5 pb-4 sm:pb-0 sm:pr-4">
+                <div className="p-2.5 rounded-lg bg-accent/5 border border-accent/15 text-accent">
+                  <ShieldCheck className="h-5 w-5" />
                 </div>
-              </ScrollRevealCard>
-
-              {/* Step 2: Analyze */}
-              <ScrollRevealCard index={1} reducedMotion={reducedMotion}>
-                <div
-                  onMouseMove={trackCardGlow}
-                  className="glass-card glow-card border border-border p-6 rounded-xl h-full flex flex-col space-y-4 hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden shadow-sm hover:shadow-md"
-                >
-                  <div className="absolute top-4 right-4 text-3xl font-sans font-extrabold text-border opacity-20 select-none">
-                    02
-                  </div>
-                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
-                    <Compass className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5 z-10">
-                    <h3 className="text-sm font-bold text-foreground">2. Instant Analysis</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Generate responsive dashboards, execute raw browser-based SQL, and run advanced serverless statistical trend forecasting.
-                    </p>
-                  </div>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-foreground">Local Execution</h4>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    Data never leaves your browser. All parsing and queries run locally on client memory.
+                  </p>
                 </div>
-              </ScrollRevealCard>
+              </div>
 
-              {/* Step 3: Ask */}
-              <ScrollRevealCard index={2} reducedMotion={reducedMotion}>
-                <div
-                  onMouseMove={trackCardGlow}
-                  className="glass-card glow-card border border-border p-6 rounded-xl h-full flex flex-col space-y-4 hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden shadow-sm hover:shadow-md"
-                >
-                  <div className="absolute top-4 right-4 text-3xl font-sans font-extrabold text-border opacity-20 select-none">
-                    03
-                  </div>
-                  <div className="h-10 w-10 bg-background border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
-                    <MessageSquare className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5 z-10">
-                    <h3 className="text-sm font-bold text-foreground">3. Conversational AI</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Chat with a smart AI analyst that translates plain English instructions into raw SQL queries and executes them in real-time.
-                    </p>
-                  </div>
+              {/* Item 2 */}
+              <div className="flex items-start space-x-3.5 pt-4 sm:pt-0 sm:pl-4 lg:pl-6 pb-4 sm:pb-0 sm:pr-4">
+                <div className="p-2.5 rounded-lg bg-accent/5 border border-accent/15 text-accent">
+                  <UserCheck className="h-5 w-5" />
                 </div>
-              </ScrollRevealCard>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-foreground">No Account Required</h4>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    Zero signup steps. Instantly drag-and-drop spreadsheets and get immediate dashboards.
+                  </p>
+                </div>
+              </div>
+
+              {/* Item 3 */}
+              <div className="flex items-start space-x-3.5 pt-4 sm:pt-0 sm:pl-4 lg:pl-6 pb-4 sm:pb-0 sm:pr-4">
+                <div className="p-2.5 rounded-lg bg-accent/5 border border-accent/15 text-accent">
+                  <Cpu className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-foreground">Open-Source Engine</h4>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    Powered by standardized open technology: DuckDB-WASM, React, and Supabase security.
+                  </p>
+                </div>
+              </div>
+
+              {/* Item 4 */}
+              <div className="flex items-start space-x-3.5 pt-4 sm:pt-0 sm:pl-4 lg:pl-6">
+                <div className="p-2.5 rounded-lg bg-accent/5 border border-accent/15 text-accent">
+                  <Zap className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-foreground">Instant Results</h4>
+                  <p className="text-[11px] text-muted leading-relaxed">
+                    High-performance local execution delivers sub-second insights, chats, and exports.
+                  </p>
+                </div>
+              </div>
             </div>
           </section>
 
-          {/* Subtle trust stack bar */}
-          <section className="flex flex-col items-center justify-center space-y-3 pt-6 select-none border-t border-border/60 relative z-10">
-            <span className="text-[9px] uppercase font-bold text-muted tracking-widest flex items-center gap-1.5">
-              <Cpu className="h-3 w-3 text-accent" />
+          {/* UNDERSTATED TECHNICAL DATA-FLOW DIAGRAM */}
+          <section className="space-y-8 text-center pt-4">
+            <div className="space-y-2">
+              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block">System Integration</span>
+              <h2 className="font-sans text-2xl font-bold text-foreground tracking-tight">Transparent Architecture Flow</h2>
+              <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
+                See how your spreadsheet parses locally and triggers contextual AI and visual analysis.
+              </p>
+            </div>
+
+            <div className="relative border border-border bg-surface-subtle rounded-xl p-8 max-w-4xl mx-auto overflow-hidden shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-6 items-center relative z-10">
+                {/* Node 1 */}
+                <div className="md:col-span-1 flex flex-col items-center text-center space-y-2">
+                  <div className="h-11 w-11 bg-surface border border-border rounded-xl flex items-center justify-center text-accent shadow-sm">
+                    <FileSpreadsheet className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-foreground leading-tight">1. Upload</h4>
+                    <p className="text-[9px] text-muted mt-0.5">CSV / Excel</p>
+                  </div>
+                </div>
+
+                {/* Arrow 1 */}
+                <div className="md:col-span-1 flex justify-center text-muted">
+                  <ArrowRight className="h-4 w-4 rotate-90 md:rotate-0" />
+                </div>
+
+                {/* Node 2 */}
+                <div className="md:col-span-1 flex flex-col items-center text-center space-y-2">
+                  <div className="h-11 w-11 bg-surface border border-border rounded-xl flex items-center justify-center text-accent shadow-sm">
+                    <Cpu className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-foreground leading-tight">2. Local DB</h4>
+                    <p className="text-[9px] text-muted mt-0.5">DuckDB-WASM</p>
+                  </div>
+                </div>
+
+                {/* Arrow 2 */}
+                <div className="md:col-span-1 flex justify-center text-muted">
+                  <ArrowRight className="h-4 w-4 rotate-90 md:rotate-0" />
+                </div>
+
+                {/* Node 3 */}
+                <div className="md:col-span-1 flex flex-col items-center text-center space-y-2">
+                  <div className="h-11 w-11 bg-surface border border-border rounded-xl flex items-center justify-center text-accent shadow-sm">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-foreground leading-tight">3. AI Insights</h4>
+                    <p className="text-[9px] text-muted mt-0.5">Gemini Co-Pilot</p>
+                  </div>
+                </div>
+
+                {/* Arrow 3 */}
+                <div className="md:col-span-1 flex justify-center text-muted">
+                  <ArrowRight className="h-4 w-4 rotate-90 md:rotate-0" />
+                </div>
+
+                {/* Node 4 */}
+                <div className="md:col-span-1 flex flex-col items-center text-center space-y-2">
+                  <div className="h-11 w-11 bg-surface border border-border rounded-xl flex items-center justify-center text-accent shadow-sm">
+                    <FileDown className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[11px] font-bold text-foreground leading-tight">4. Export</h4>
+                    <p className="text-[9px] text-muted mt-0.5">High-Fidelity PDF</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* "BENTO GRID FEATURES" — Restrained, Confident, Data-forward */}
+          <section className="scroll-mt-24 space-y-12">
+            <div className="text-center space-y-2">
+              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block">Capabilities Overview</span>
+              <h2 className="font-sans text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                Designed for Business Decision-Making
+              </h2>
+              <p className="text-xs sm:text-sm text-muted max-w-sm mx-auto leading-relaxed">
+                Unlock advanced browser-native analytics, SQL debug options, and real-time AI consulting.
+              </p>
+            </div>
+
+            {/* Asymmetric Bento Grid wrapped in ScrollRevealCard */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+              {/* Card 1: AI Chat Analyst (Featured - Size 7 columns) */}
+              <div className="lg:col-span-7">
+                <ScrollRevealCard index={0} reducedMotion={reducedMotion}>
+                  <div className="bg-surface border border-border p-8 rounded-xl h-full flex flex-col justify-between hover:border-accent hover:shadow-md transition-all duration-200">
+                    <div className="space-y-4">
+                      <div className="h-10 w-10 bg-surface-subtle border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
+                        <MessageSquare className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <h3 className="text-sm font-bold text-foreground">Interactive AI Chat Analyst</h3>
+                        <p className="text-xs text-muted leading-relaxed font-normal">
+                          Converse directly with a smart AI data assistant. Ask questions in plain English, and the model translates your queries into raw SQL executed directly inside your local DuckDB engine. Fits right into Tableau-like experiences.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border mt-6 pt-4 flex items-center text-[10px] text-muted font-semibold">
+                      <span>Includes query recovery, schema mapping, & chart visualization</span>
+                    </div>
+                  </div>
+                </ScrollRevealCard>
+              </div>
+
+              {/* Card 2: CSV Upload & Instant Dashboard (Size 5 columns) */}
+              <div className="lg:col-span-5">
+                <ScrollRevealCard index={1} reducedMotion={reducedMotion}>
+                  <div className="bg-surface border border-border p-8 rounded-xl h-full flex flex-col justify-between hover:border-accent hover:shadow-md transition-all duration-200">
+                    <div className="space-y-4">
+                      <div className="h-10 w-10 bg-surface-subtle border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
+                        <LayoutDashboard className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <h3 className="text-sm font-bold text-foreground">Instant Interactive Dashboard</h3>
+                        <p className="text-xs text-muted leading-relaxed font-normal">
+                          Drop spreadsheets to generate high-fidelity, customized metrics and graphs. Fully responsive, adapts perfectly to light and dark theme configurations, and includes editable schema columns.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border mt-6 pt-4 flex items-center text-[10px] text-muted font-semibold">
+                      <span>Fully compatible with Excel sheets and standard CSVs</span>
+                    </div>
+                  </div>
+                </ScrollRevealCard>
+              </div>
+
+              {/* Card 3: Predictive Analytics & Outliers (Size 5 columns) */}
+              <div className="lg:col-span-5">
+                <ScrollRevealCard index={2} reducedMotion={reducedMotion}>
+                  <div className="bg-surface border border-border p-8 rounded-xl h-full flex flex-col justify-between hover:border-accent hover:shadow-md transition-all duration-200">
+                    <div className="space-y-4">
+                      <div className="h-10 w-10 bg-surface-subtle border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
+                        <TrendingUp className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <h3 className="text-sm font-bold text-foreground">Predictive Statistical Analysis</h3>
+                        <p className="text-xs text-muted leading-relaxed font-normal">
+                          Leverage the serverless Python layer for automated data projections, linear trends, and out-of-bounds anomaly detection. Perfect for operations planning and forecasting.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border mt-6 pt-4 flex items-center text-[10px] text-muted font-semibold">
+                      <span>Runs IQR outlier checks and standard linear regression</span>
+                    </div>
+                  </div>
+                </ScrollRevealCard>
+              </div>
+
+              {/* Card 4: Collaborative Workspace and PDF Sync (Size 7 columns) */}
+              <div className="lg:col-span-7">
+                <ScrollRevealCard index={3} reducedMotion={reducedMotion}>
+                  <div className="bg-surface border border-border p-8 rounded-xl h-full flex flex-col justify-between hover:border-accent hover:shadow-md transition-all duration-200">
+                    <div className="space-y-4">
+                      <div className="h-10 w-10 bg-surface-subtle border border-border rounded-lg flex items-center justify-center text-accent shadow-sm">
+                        <FileDown className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <h3 className="text-sm font-bold text-foreground">Enterprise Export & Persistent Sync</h3>
+                        <p className="text-xs text-muted leading-relaxed font-normal">
+                          Persist configured layouts to Supabase using a local session key. Compile complete dashboards into clean, multi-page vector-based PDFs instantly for offline reports or corporate slide decks.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border mt-6 pt-4 flex items-center text-[10px] text-muted font-semibold">
+                      <span>Safeguarded against wrong-theme flashes or render failures</span>
+                    </div>
+                  </div>
+                </ScrollRevealCard>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Technical Trust Stack Section */}
+          <section className="flex flex-col items-center justify-center space-y-4 pt-10 border-t border-border/80">
+            <span className="text-[10px] uppercase font-extrabold text-muted tracking-widest flex items-center gap-1.5">
+              <Cpu className="h-3.5 w-3.5 text-accent" />
               <span>Technical Engine Stack</span>
             </span>
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-muted">
               <span className="flex items-center gap-1.5 hover:text-foreground transition duration-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                <span>Gemini AI</span>
+                <span>Gemini API (2.5 Flash)</span>
               </span>
               <span className="text-border hidden sm:inline">|</span>
               <span className="flex items-center gap-1.5 hover:text-foreground transition duration-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                <span>DuckDB-WASM</span>
+                <span>DuckDB-WASM Engine</span>
               </span>
               <span className="text-border hidden sm:inline">|</span>
               <span className="flex items-center gap-1.5 hover:text-foreground transition duration-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                <span>Supabase Secure Sync</span>
+                <span>Supabase Cloud Database</span>
               </span>
             </div>
           </section>
@@ -678,7 +938,7 @@ function HomeContent() {
 
       {/* Active Workspace Header Bar */}
       {parsedData && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6 pt-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6 pt-4">
           <div>
             <h1 className="text-2xl font-sans font-bold tracking-tight text-foreground">
               Interactive Workspace
@@ -689,7 +949,7 @@ function HomeContent() {
           </div>
           <button
             onClick={handleClear}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-surface hover:bg-surface-subtle text-rose-500 border border-border rounded-lg text-xs transition-all font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            className="flex items-center space-x-1.5 px-4 py-2 bg-surface hover:bg-surface-subtle text-rose-600 border border-border rounded-lg text-xs transition-all font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
           >
             <Trash2 className="h-3.5 w-3.5" />
             <span>Clear / Upload New</span>
@@ -908,7 +1168,7 @@ function HomeContent() {
             >
               <div className="flex items-center space-x-2.5">
                 <div className="p-1.5 rounded-lg border border-border text-accent bg-surface">
-                  <Terminal className="h-4.5 w-4.5" />
+                  <Cpu className="h-4.5 w-4.5" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
@@ -1126,7 +1386,7 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
+        <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20 animate-pulse">
           <RefreshCw className="h-6 w-6 text-accent animate-spin" />
           <span className="text-xs text-muted font-semibold">Initializing workspace co-pilot...</span>
         </div>

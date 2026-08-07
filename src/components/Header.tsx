@@ -17,22 +17,20 @@ export default function Header() {
 
   // Sync scroll state to trigger glassmorphism nav
   useEffect(() => {
-    if (pathname === "/") return;
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 15);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [pathname]);
+  }, []);
 
   // Sync theme state on mount
   useEffect(() => {
-    if (pathname === "/") return;
     if (typeof window !== "undefined") {
       const isDark = document.documentElement.classList.contains("dark");
       setTheme(isDark ? "dark" : "light");
     }
-  }, [pathname]);
+  }, []);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -48,18 +46,16 @@ export default function Header() {
 
   // Check prefers-reduced-motion
   useEffect(() => {
-    if (pathname === "/") return;
     if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mediaQuery.matches);
     const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
     mediaQuery.addEventListener("change", listener);
     return () => mediaQuery.removeEventListener("change", listener);
-  }, [pathname]);
+  }, []);
 
   // Close drawer on escape key
   useEffect(() => {
-    if (pathname === "/") return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsDrawerOpen(false);
@@ -75,14 +71,7 @@ export default function Header() {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
     };
-  }, [isDrawerOpen, pathname]);
-
-  // The OS/terminal menu bar is exclusive to the homepage.
-  // We keep the traditional header everywhere else.
-  if (pathname === "/") {
-    return null;
-  }
-
+  }, [isDrawerOpen]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     if (pathname === "/") {
@@ -149,7 +138,7 @@ export default function Header() {
       <header
         className={`sticky top-0 z-50 w-full transition-all duration-300 ${
           isScrolled
-            ? "bg-background/70 dark:bg-background/60 backdrop-blur-md shadow-sm border-b border-border/50 py-3"
+            ? "bg-background/80 dark:bg-background/85 backdrop-blur-md shadow-sm border-b border-border py-3"
             : "bg-transparent border-b border-transparent py-5"
         }`}
       >
@@ -208,7 +197,7 @@ export default function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-3.5">
-            {/* Premium Theme Toggle with hover rotation */}
+            {/* Premium Theme Toggle */}
             <motion.button
               onClick={toggleTheme}
               whileHover={{ scale: 1.05, rotate: 8 }}
@@ -219,10 +208,10 @@ export default function Header() {
               {theme === "dark" ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4 text-slate-700" />}
             </motion.button>
 
-            {/* Magnetic CTA button */}
+            {/* Confident standard CTA button */}
             <MagneticButton
               onClick={handleCtaClick}
-              className="flex items-center space-x-1.5 px-4 py-2 bg-accent text-white font-semibold rounded-lg text-xs transition-all shadow-md shadow-accent/15 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              className="flex items-center space-x-1.5 px-4 py-2 bg-accent text-white font-semibold rounded-lg text-xs transition-all shadow-md focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
             >
               <span>Upload Data</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
