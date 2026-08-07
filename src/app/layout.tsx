@@ -4,6 +4,8 @@ import "./globals.css";
 import { DuckDBProvider } from "@/context/DuckDBContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageTransition from "@/components/PageTransition";
+import { ScrollProgressBar, CursorGlow } from "@/components/PremiumEffects";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,14 +49,25 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="bg-background text-foreground font-sans antialiased min-h-screen flex flex-col selection:bg-accent/20">
+      <body className="bg-background text-foreground font-sans antialiased min-h-screen flex flex-col selection:bg-accent/20 relative">
+        {/* Premium Paper Finish Overlay */}
+        <div className="noise-overlay" />
+
+        {/* Scroll Progress Bar at very top */}
+        <ScrollProgressBar />
+
+        {/* Soft Cursor Glow */}
+        <CursorGlow />
+
         <DuckDBProvider>
           {/* New Premium Navigation Header */}
           <Header />
 
-          {/* Page Content */}
-          <main className="flex-1 flex flex-col">
-            {children}
+          {/* Page Content with Smooth Motion Transition */}
+          <main className="flex-1 flex flex-col relative z-10">
+            <PageTransition>
+              {children}
+            </PageTransition>
           </main>
 
           {/* New Premium Footer */}

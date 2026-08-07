@@ -621,14 +621,25 @@ export default function Dashboard({
         throw new Error("Widgets container not found.");
       }
 
+      // Safeguard: Add export-safe fallback class to disable glass blurs/shadows/noise/aurora
+      element.classList.add("pdf-export-mode");
+      document.body.classList.add("pdf-export-mode");
+
       const isDarkModeActive = document.documentElement.classList.contains("dark");
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        backgroundColor: isDarkModeActive ? "#0a0a0a" : "#ffffff",
-        useCORS: true,
-        logging: false,
-      });
+      let canvas;
+      try {
+        canvas = await html2canvas(element, {
+          scale: 2,
+          backgroundColor: isDarkModeActive ? "#1E1C1A" : "#FFFFFF",
+          useCORS: true,
+          logging: false,
+        });
+      } finally {
+        // Clean up safeguard classes immediately after rendering canvas
+        element.classList.remove("pdf-export-mode");
+        document.body.classList.remove("pdf-export-mode");
+      }
 
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
