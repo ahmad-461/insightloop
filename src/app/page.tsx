@@ -203,19 +203,82 @@ function HomeContent() {
     return () => mediaQuery.removeEventListener("change", listener);
   }, []);
 
-  // Handle URL query parameters for scrolling on mount
+  // Handle URL query parameters for scrolling or actions on mount
   useEffect(() => {
-    if (scrollParam) {
+    const actionParam = searchParams ? searchParams.get("action") : null;
+
+    if (scrollParam || actionParam) {
       router.replace("/");
 
       setTimeout(() => {
-        const el = document.getElementById(scrollParam);
-        if (el) {
-          el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+        if (scrollParam) {
+          const el = document.getElementById(scrollParam);
+          if (el) {
+            el.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+          }
+        } else if (actionParam) {
+          if (actionParam === "ask-ai") {
+            const chatInput = document.querySelector("textarea[placeholder*='Ask a question']") as HTMLTextAreaElement;
+            if (chatInput) {
+              const el = document.getElementById("chat-panel") || chatInput;
+              el.scrollIntoView({ behavior: "smooth" });
+              chatInput.focus();
+            }
+          } else if (actionParam === "debug-sql") {
+            setIsConsoleCollapsed(false);
+            setTimeout(() => {
+              const el = document.getElementById("query-console");
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth" });
+                (el as HTMLElement).focus();
+              }
+            }, 100);
+          } else if (actionParam === "advanced-insights") {
+            const el = document.getElementById("advanced-insights-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }
         }
       }, 300);
     }
-  }, [scrollParam, router, reducedMotion]);
+  }, [scrollParam, searchParams, router, reducedMotion]);
+
+  // Listen to Command Palette direct events for homepage
+  useEffect(() => {
+    const handleFocusChat = () => {
+      const chatInput = document.querySelector("textarea[placeholder*='Ask a question']") as HTMLTextAreaElement;
+      if (chatInput) {
+        const el = document.getElementById("chat-panel") || chatInput;
+        el.scrollIntoView({ behavior: "smooth" });
+        chatInput.focus();
+      }
+    };
+
+    const handleOpenSql = () => {
+      setIsConsoleCollapsed(false);
+      setTimeout(() => {
+        const el = document.getElementById("query-console");
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+          (el as HTMLElement).focus();
+        }
+      }, 100);
+    };
+
+    const handleOpenInsights = () => {
+      const el = document.getElementById("advanced-insights-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    };
+
+    window.addEventListener("insightloop-focus-chat", handleFocusChat);
+    window.addEventListener("insightloop-open-sql", handleOpenSql);
+    window.addEventListener("insightloop-open-insights", handleOpenInsights);
+
+    return () => {
+      window.removeEventListener("insightloop-focus-chat", handleFocusChat);
+      window.removeEventListener("insightloop-open-sql", handleOpenSql);
+      window.removeEventListener("insightloop-open-insights", handleOpenInsights);
+    };
+  }, []);
 
   // Automatically collapse preview when dashboard loaded
   const handleDashboardLoaded = () => {
@@ -1452,7 +1515,7 @@ function HomeContent() {
           </div>
 
           {/* 🧠 Python Advanced Insights Section */}
-          <div className="pt-6 border-t border-border space-y-3">
+          <div id="advanced-insights-section" className="pt-6 border-t border-border space-y-3">
             <AdvancedInsights
               parsedData={parsedData}
               datasetLoaded={datasetLoaded}
@@ -1461,7 +1524,7 @@ function HomeContent() {
           </div>
 
           {/* 💬 AI Text-to-SQL Co-Pilot Section */}
-          <div className="pt-6 border-t border-border space-y-3">
+          <div id="chat-panel" className="pt-6 border-t border-border space-y-3">
             <ChatPanel
               datasetLoaded={datasetLoaded}
               schema={parsedData.schema}

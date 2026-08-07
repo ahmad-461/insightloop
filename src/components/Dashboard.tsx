@@ -109,6 +109,87 @@ export default function Dashboard({
 
   const [exportingPdf, setExportingPdf] = useState(false);
 
+  // "Explain This Chart" micro-feature states
+  const [activeExplanationWidgetId, setActiveExplanationWidgetId] = useState<string | null>(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
+  const [explanationError, setExplanationError] = useState<string | null>(null);
+  const [explanationsCache, setExplanationsCache] = useState<Record<string, string>>({});
+
+  // Caching mechanism
+  const getCacheKey = useCallback((widget: WidgetConfig): string => {
+    const data = widgetData[widget.id] || [];
+    const serializedData = JSON.stringify(data.slice(0, 10));
+    let hash = 0;
+    for (let i = 0; i < serializedData.length; i++) {
+      hash = (hash << 5) - hash + serializedData.charCodeAt(i);
+      hash |= 0;
+    }
+    return `${widget.id}_${hash}`;
+  }, [widgetData]);
+
+  const handleExplainChart = async (widget: WidgetConfig) => {
+    if (activeExplanationWidgetId === widget.id) {
+      setActiveExplanationWidgetId(null);
+      return;
+    }
+
+    const cacheKey = getCacheKey(widget);
+    setActiveExplanationWidgetId(widget.id);
+
+    if (explanationsCache[cacheKey]) {
+      setExplanationError(null);
+      return;
+    }
+
+    setExplanationLoading(true);
+    setExplanationError(null);
+
+    try {
+      const data = widgetData[widget.id] || [];
+      const res = await fetch("/api/explain-chart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: widget.title,
+          type: widget.type,
+          data,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error((errJson as { error: string }).error || "Failed to generate explanation.");
+      }
+
+      const resData = (await res.json()) as { explanation: string };
+      setExplanationsCache((prev) => ({
+        ...prev,
+        [cacheKey]: resData.explanation,
+      }));
+    } catch (err: unknown) {
+      console.error("Chart explanation failed:", err);
+      setExplanationError("Couldn't generate an explanation — try again");
+    } finally {
+      setExplanationLoading(false);
+    }
+  };
+
+  // Handle click outside to dismiss explanation popover
+  useEffect(() => {
+    if (!activeExplanationWidgetId) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const activeCard = document.getElementById(`widget-card-${activeExplanationWidgetId}`);
+      if (activeCard && !activeCard.contains(target)) {
+        setActiveExplanationWidgetId(null);
+      }
+    };
+
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, [activeExplanationWidgetId]);
+
   // Determine active schema columns
   const dateCols = useMemo(() => parsedData.schema.filter(c => c.currentType === "date"), [parsedData.schema]);
   const numCols = useMemo(() => parsedData.schema.filter(c => c.currentType === "number" || c.currentType === "currency"), [parsedData.schema]);
@@ -303,6 +384,25 @@ export default function Dashboard({
       initializeDashboardWidgets();
     }
   }, [datasetLoaded, parsedData.schema, initializeDashboardWidgets]);
+
+  // Command Palette global actions listeners
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const handleExportEvent = () => {
+      handleExportPDF();
+    };
+    const handleSaveEvent = () => {
+      triggerSaveModal();
+    };
+
+    window.addEventListener("insightloop-export-pdf", handleExportEvent);
+    window.addEventListener("insightloop-save-dashboard", handleSaveEvent);
+
+    return () => {
+      window.removeEventListener("insightloop-export-pdf", handleExportEvent);
+      window.removeEventListener("insightloop-save-dashboard", handleSaveEvent);
+    };
+  }, [widgets, parsedData, saveTitle, dashboardId]);
 
   // Execute query for a specific widget
   const fetchWidgetData = useCallback(async (widget: WidgetConfig) => {
@@ -1016,6 +1116,7 @@ export default function Dashboard({
             return (
               <div
                 key={widget.id}
+                id={`widget-card-${widget.id}`}
                 className={`${gridColSpan} bg-surface border border-border rounded-lg flex flex-col justify-between relative overflow-hidden group hover:border-text-secondary transition-all p-5 h-full`}
                 style={{ minHeight: isKpi ? "150px" : "350px" }}
               >
@@ -1032,16 +1133,34 @@ export default function Dashboard({
                       )
                     )}
                     <h3
-                      className="font-sans text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[150px] sm:max-w-[200px]"
+                      className="font-sans text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]"
                       title={widget.title}
                     >
                       {widget.title}
                     </h3>
                   </div>
 
-                  {/* Move up / Move down / Delete Action Buttons */}
-                  <div data-html2canvas-ignore="true" className="flex items-center space-x-0.5 flex-shrink-0 bg-background border border-border p-1 rounded-lg">
-                    <button
+                  <div className="flex items-center">
+                    {/* Explain This Chart Button */}
+                    {!isKpi && !isWidgetLoading && !errorMsg && data && data.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleExplainChart(widget)}
+                        className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none mr-2 uppercase tracking-wide ${
+                          activeExplanationWidgetId === widget.id
+                            ? "bg-accent border-accent text-white"
+                            : "bg-surface border-border text-muted hover:text-foreground hover:bg-surface-subtle"
+                        }`}
+                        title="Get instant AI explanation of this chart"
+                      >
+                        <Sparkles className="h-3 w-3 shrink-0 text-amber-500" />
+                        <span className="hidden sm:inline">Explain</span>
+                      </button>
+                    )}
+
+                    {/* Move up / Move down / Delete Action Buttons */}
+                    <div data-html2canvas-ignore="true" className="flex items-center space-x-0.5 flex-shrink-0 bg-background border border-border p-1 rounded-lg">
+                      <button
                       type="button"
                       onClick={() => moveWidget(index, "up")}
                       disabled={index === 0}
@@ -1070,6 +1189,7 @@ export default function Dashboard({
                     </button>
                   </div>
                 </div>
+              </div>
 
                 {/* Main Card Content */}
                 <div className="flex-1 flex flex-col justify-center">
@@ -1263,6 +1383,43 @@ export default function Dashboard({
                     </>
                   )}
                 </div>
+
+                {/* Popover/Tooltip Overlay for Chart Explanations */}
+                {activeExplanationWidgetId === widget.id && (
+                  <div className="absolute top-[52px] left-4 right-4 bg-surface border border-border rounded-lg shadow-xl z-30 p-4 animate-fade-in font-sans">
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between border-b border-border pb-1.5">
+                        <div className="flex items-center space-x-1.5 text-accent font-bold text-[9px] uppercase tracking-wide">
+                          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                          <span>AI Chart Explanation</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveExplanationWidgetId(null)}
+                          className="text-muted hover:text-foreground transition p-0.5 rounded focus-visible:ring-2 focus-visible:ring-accent"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {explanationLoading ? (
+                        <div className="flex items-center space-x-2 py-4 text-xs text-muted">
+                          <RefreshCw className="h-3.5 w-3.5 text-accent animate-spin" />
+                          <span>Thinking...</span>
+                        </div>
+                      ) : explanationError ? (
+                        <div className="flex items-start space-x-2 text-rose-500 text-[11px] py-2 leading-normal">
+                          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          <span>{explanationError}</span>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-foreground leading-relaxed font-normal">
+                          {explanationsCache[getCacheKey(widget)]}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

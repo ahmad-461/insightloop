@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, ArrowUpRight, Sun, Moon } from "lucide-react";
+import { Menu, X, ArrowUpRight, Sun, Moon, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MagneticButton } from "./PremiumEffects";
+import { useCommandPalette } from "@/context/CommandPaletteContext";
 
 export default function Header() {
+  const { togglePalette } = useCommandPalette();
   const pathname = usePathname();
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -209,6 +211,21 @@ export default function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-3.5">
+            {/* Command Palette Toggle */}
+            <motion.button
+              onClick={togglePalette}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="hidden md:inline-flex items-center space-x-1.5 px-3 py-2 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-lg border border-border bg-surface shadow-sm text-xs font-semibold"
+              aria-label="Open Command Palette"
+            >
+              <Search className="h-3.5 w-3.5 text-muted" />
+              <span>Search</span>
+              <span className="text-[10px] bg-background border border-border rounded px-1.5 py-0.5 text-muted font-bold font-mono">
+                ⌘K
+              </span>
+            </motion.button>
+
             {/* Premium Theme Toggle with hover rotation */}
             <motion.button
               onClick={toggleTheme}
