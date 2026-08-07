@@ -64,30 +64,6 @@ import {
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
-// Tech Stack Badge Component
-function TechBadge({
-  icon: Icon,
-  name,
-  desc
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  name: string;
-  desc: string;
-}) {
-  return (
-    <div className="flex flex-col p-4 bg-surface border border-border/60 rounded-xl hover:border-text-secondary transition duration-300 shadow-xs relative overflow-hidden group">
-      <div className="absolute top-0 left-0 w-1 h-full bg-accent/30 scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-300" />
-      <div className="flex items-center space-x-3 mb-2">
-        <div className="p-1.5 rounded-lg border border-border bg-background text-accent">
-          <Icon className="h-4 w-4" />
-        </div>
-        <span className="text-xs font-bold text-foreground">{name}</span>
-      </div>
-      <p className="text-[11px] text-muted leading-relaxed font-normal">{desc}</p>
-    </div>
-  );
-}
-
 // Animated Counter Component
 function AnimatedCounter({ value, label, trigger }: { value: number; label: string; trigger: boolean }) {
   const [count, setCount] = useState(0);
@@ -1194,35 +1170,19 @@ function HomeContent() {
             </div>
           </section>
 
-          {/* 7. SOCIAL PROOF — "Built With" Technology Badges */}
-          <section id="built-with" className="scroll-mt-24 space-y-12">
-            <div className="text-center space-y-2">
-              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block font-mono">Under the Hood</span>
-              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                Architected with Real-World Engines
-              </h2>
-              <p className="text-xs sm:text-sm text-muted max-w-sm mx-auto leading-relaxed">
-                A verified technical stack ensuring speed, persistence, and safe generative intelligence.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto px-4">
-              <TechBadge icon={Cpu} name="Next.js App Router" desc="Provides fast serverless page layout rendering, light/dark hydration, and seamless Next.js 15 client-side path transitions." />
-              <TechBadge icon={Type} name="TypeScript Core" desc="Enforces compilation-level type checking for schema parser functions, type alignments, and database interaction boundaries." />
-              <TechBadge icon={Bot} name="Gemini API Engine" desc="Translates conversational prompts server-side via official @google/generative-ai and gemini-2.5-flash with automated recovery." />
-              <TechBadge icon={Database} name="Supabase Secure Sync" desc="Handles safe dashboard schema definitions and chat histories utilizing anonymous session locks and RLS rules." />
-              <TechBadge icon={Zap} name="DuckDB-WASM Engine" desc="Launches high-performance columnar DuckDB directly inside browser memory to execute analytics without delays." />
-              <TechBadge icon={Server} name="Vercel serverless layer" desc="Executes severe statistical tasks (IQR outlier scanning, Trend Forecasts) instantly using modern serverless API endpoints." />
-            </div>
-          </section>
-
-          {/* 8. "PRICING" SECTION — Free & Open Centered Panel */}
+          {/* 7. "PRICING" SECTION — Free & Open Centered Panel */}
           <section id="pricing" className="scroll-mt-24 max-w-2xl mx-auto px-4">
-            <div className="bg-surface border border-accent/20 rounded-2xl p-8 sm:p-10 shadow-md text-center space-y-6 relative overflow-hidden group">
+            <div className="bg-slate-50/80 dark:bg-slate-900/30 border border-accent/20 dark:border-accent/30 rounded-2xl p-8 sm:p-10 shadow-xl shadow-accent/5 hover:shadow-accent/10 hover:border-accent/40 transition-all text-center space-y-6 relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-500" />
-              <div className="absolute top-4 right-4 text-accent/15 select-none font-extrabold text-6xl font-mono">FREE</div>
 
-              <div className="space-y-2">
+              {/* Subtle decorative background watermark to avoid collisions and text overlap */}
+              <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none z-0 overflow-hidden">
+                <span className="text-accent opacity-[0.04] dark:opacity-[0.06] font-extrabold text-[120px] font-mono tracking-widest uppercase">
+                  FREE
+                </span>
+              </div>
+
+              <div className="space-y-2 relative z-10">
                 <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block font-mono">Pricing Commitment</span>
                 <h3 className="font-sans text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
                   Free & Open-Source BI
@@ -1232,7 +1192,7 @@ function HomeContent() {
                 </p>
               </div>
 
-              <div className="border-t border-b border-border/60 py-5 space-y-3.5 max-w-xs mx-auto text-left text-xs text-muted font-normal">
+              <div className="border-t border-b border-border/60 py-5 space-y-3.5 max-w-xs mx-auto text-left text-xs text-muted font-normal relative z-10">
                 <div className="flex items-center space-x-2.5">
                   <CheckCircle className="h-4 w-4 text-accent" />
                   <span>100% Client-Side Data Integrity</span>
@@ -1247,7 +1207,7 @@ function HomeContent() {
                 </div>
               </div>
 
-              <div>
+              <div className="relative z-10">
                 <button
                   onClick={() => handleScrollToSection("upload-zone")}
                   className="flex items-center justify-center space-x-1.5 px-6 py-3 bg-accent text-white font-semibold rounded-xl text-xs transition-all mx-auto shadow-md shadow-accent/15 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
