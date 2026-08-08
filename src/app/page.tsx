@@ -1165,34 +1165,32 @@ function HomeContent() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={triggerFileBrowser}
-                  className={`w-full min-h-[220px] bg-surface hover:bg-surface-subtle/50 border border-border border-dashed hover:border-text-secondary/60 rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group ${
-                    isDragging ? "bg-accent/10 border-solid border-accent scale-[0.98]" : "shadow-xs"
+                  className={`w-full min-h-[240px] bg-surface/50 hover:bg-surface border rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-300 ease-out relative overflow-hidden group ${
+                    isDragging
+                      ? "bg-accent/10 border-accent scale-[0.98] shadow-lg shadow-accent/10"
+                      : "border-border shadow-sm hover:shadow-md hover:border-accent/30"
                   }`}
                 >
                   <div className="absolute top-0 left-0 w-full h-1 bg-accent/40 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
 
-                  <div className="h-12 w-12 bg-background border border-border rounded-xl flex items-center justify-center text-accent shadow-sm mb-4">
+                  <div className="h-14 w-14 bg-accent/10 border border-accent/20 rounded-2xl flex items-center justify-center text-accent shadow-sm mb-5 group-hover:scale-110 group-hover:bg-accent/15 group-hover:border-accent/30 transition-all duration-300 ease-out">
                     <Upload className="h-5 w-5" />
                   </div>
 
                   <div className="space-y-1.5 font-sans">
-                    <div className="flex items-center justify-center space-x-1.5 text-xs sm:text-sm text-foreground font-bold">
-                      <span className="text-accent">&gt;</span>
+                    <div className="flex items-center justify-center space-x-1.5 text-sm sm:text-base font-semibold tracking-tight text-foreground">
                       <span>Drag & drop CSV or Excel spreadsheet here</span>
                     </div>
-                    <p className="text-xs text-muted">
-                      or <span className="text-accent underline font-semibold">browse your system directory</span>
+                    <p className="text-xs sm:text-sm text-muted">
+                      or <span className="text-accent font-semibold underline underline-offset-4 decoration-accent/30 hover:decoration-accent transition-all">browse your system directory</span>
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] text-muted/60 mt-6 uppercase tracking-wider font-extrabold font-mono">
-                    <span>CSV</span>
-                    <span>•</span>
-                    <span>XLSX</span>
-                    <span>•</span>
-                    <span>XLS</span>
-                    <span>•</span>
-                    <span>Max Size 5MB</span>
+                  <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
+                    <span className="px-2.5 py-1 text-[10px] font-bold tracking-wider rounded-full border border-border bg-surface-subtle/50 text-muted/80 shadow-2xs font-mono">CSV</span>
+                    <span className="px-2.5 py-1 text-[10px] font-bold tracking-wider rounded-full border border-border bg-surface-subtle/50 text-muted/80 shadow-2xs font-mono">XLSX</span>
+                    <span className="px-2.5 py-1 text-[10px] font-bold tracking-wider rounded-full border border-border bg-surface-subtle/50 text-muted/80 shadow-2xs font-mono">XLS</span>
+                    <span className="px-2.5 py-1 text-[10px] font-bold tracking-wider rounded-full border border-accent/20 bg-accent/5 text-accent shadow-2xs font-mono">MAX 5MB</span>
                   </div>
 
                   {isPending && (
@@ -1234,7 +1232,7 @@ function HomeContent() {
               </div>
 
               <div className="space-y-2 relative z-10">
-                <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block font-mono">Pricing Commitment</span>
+                <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block font-mono">PLATFORM COMMITMENT</span>
                 <h3 className="font-sans text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
                   Free & Open-Source BI
                 </h3>
