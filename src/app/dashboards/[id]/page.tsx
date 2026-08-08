@@ -330,18 +330,6 @@ export default function DashboardDetailPage() {
               }}
             />
           </div>
-
-          {/* Live AI Copilot Chat */}
-          <div className="pt-6 border-t border-border">
-            <ChatPanel
-              datasetLoaded={true}
-              schema={reactivatedParsedData.schema}
-              runQuery={runQuery}
-              dashboardId={isOwner ? id : null}
-              initialMessages={chatHistory}
-              isReadOnly={!isOwner}
-            />
-          </div>
         </div>
       ) : (
         /* READ-ONLY STATICS WORKSPACE */
