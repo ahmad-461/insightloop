@@ -204,7 +204,7 @@ export default function Header() {
               onClick={(e) => handleNavClick(e, "pricing")}
               className="relative py-1.5 px-3.5 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-md group"
             >
-              <span>Pricing</span>
+              <span>Free & Open</span>
               <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] bg-accent transition-all duration-300 ease-out group-hover:w-3/4 w-0" />
             </Link>
           </nav>
@@ -351,7 +351,7 @@ export default function Header() {
                   onClick={(e) => handleNavClick(e, "pricing")}
                   className="flex items-center justify-between p-2.5 rounded-lg text-muted hover:text-foreground transition border border-transparent hover:bg-surface-subtle/40"
                 >
-                  <span>Pricing</span>
+                  <span>Free & Open</span>
                 </Link>
               </nav>
 
