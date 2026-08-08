@@ -1,0 +1,20 @@
+
+> insightloop@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.0.7
+   - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1816ms
+ ○ Compiling / ...
+ ✓ Compiled / in 18.1s (3527 modules)
+ GET / 200 in 20000ms
+ ✓ Compiled in 2.2s (1693 modules)
+ GET / 200 in 81ms
+ ○ Compiling /about ...
+ ✓ Compiled /about in 1565ms (3510 modules)
+ GET /about 200 in 1735ms
+ ○ Compiling /changelog ...
+ ✓ Compiled /changelog in 654ms (3516 modules)
+ GET /changelog 200 in 773ms
