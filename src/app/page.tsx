@@ -24,24 +24,20 @@ import {
   ChevronUp,
   LayoutDashboard,
   XCircle,
-  Cpu,
   ArrowRight,
-  Zap,
-  Bot,
-  Database,
-  Lock
+  Zap
 } from "lucide-react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LineChart,
+  Line
 } from "recharts";
 import {
   parseCSV,
@@ -53,54 +49,14 @@ import {
 } from "../utils/parser";
 import { useDuckDB } from "@/context/DuckDBContext";
 import Dashboard from "@/components/Dashboard";
-import ChatPanel from "@/components/ChatPanel";
-import AdvancedInsights from "@/components/AdvancedInsights";
 import { supabase } from "@/utils/supabaseClient";
 import {
   AuroraBackground,
-  FloatingAIIcons,
-  MagneticButton
+  FloatingAIIcons
 } from "@/components/PremiumEffects";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
-// Animated Counter Component
-function AnimatedCounter({ value, label, trigger }: { value: number; label: string; trigger: boolean }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!trigger) return;
-    let start = 0;
-    const end = value;
-    if (start === end) return;
-
-    const totalDuration = 1500;
-    const incrementTime = Math.max(Math.floor(totalDuration / end), 25);
-
-    const timer = setInterval(() => {
-      start += Math.ceil(end / 40);
-      if (start >= end) {
-        clearInterval(timer);
-        setCount(end);
-      } else {
-        setCount(start);
-      }
-    }, incrementTime);
-
-    return () => clearInterval(timer);
-  }, [value, trigger]);
-
-  return (
-    <div className="text-center space-y-1">
-      <span className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight block">
-        {count.toLocaleString()}+
-      </span>
-      <span className="text-[10px] uppercase font-extrabold tracking-widest text-muted block">
-        {label}
-      </span>
-    </div>
-  );
-}
 
 // Sample Data for Real AreaChart View inside Hero
 const HERO_CHART_DATA = [
@@ -109,6 +65,87 @@ const HERO_CHART_DATA = [
   { quarter: "Q3", revenue: 26100 },
   { quarter: "Q4", revenue: 42300 },
 ];
+
+const ROTATING_QUESTIONS = [
+  "Which region grew fastest last quarter?",
+  "What's driving the drop in March?",
+  "Show me outliers in customer spend"
+];
+
+const REGIONAL_SALES_DATA = [
+  { month: "Jan", North: 4500, South: 3200, East: 4100, West: 5000 },
+  { month: "Feb", North: 4800, South: 3500, East: 4300, West: 5500 },
+  { month: "Mar", North: 4200, South: 3000, East: 3900, West: 4800 },
+  { month: "Apr", North: 5100, South: 3800, East: 4600, West: 6200 },
+  { month: "May", North: 5600, South: 4100, East: 4900, West: 7100 },
+  { month: "Jun", North: 6200, South: 4500, East: 5300, West: 8400 },
+];
+
+// Continuous narrative aggregations
+const REGIONAL_TOTALS = [
+  { region: "North", revenue: 30400 },
+  { region: "South", revenue: 22100 },
+  { region: "East", revenue: 26100 },
+  { region: "West", revenue: 37000 },
+];
+
+const REGIONAL_GROWTH = [
+  { region: "North", growth: 37 },
+  { region: "South", growth: 40 },
+  { East: 29 },
+  { region: "West", growth: 68 },
+];
+
+const WEST_TREND_DATA = [
+  { month: "Jan", actual: 5000, trend: 5000 },
+  { month: "Feb", actual: 5500, trend: 5600 },
+  { month: "Mar", actual: 4800, trend: 6200 },
+  { month: "Apr", actual: 6200, trend: 6800 },
+  { month: "May", actual: 7100, trend: 7400 },
+  { month: "Jun", actual: 8400, trend: 8000 },
+  { month: "Jul", trend: 8600, forecast: 9500 },
+  { month: "Aug", trend: 9200, forecast: 10600 },
+];
+
+// Custom typewriter component for the placeholder
+function TypewriterPlaceholder({ reducedMotion }: { reducedMotion: boolean }) {
+  const [text, setText] = useState("");
+  const [index, setIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      setText(ROTATING_QUESTIONS[0]);
+      return;
+    }
+
+    let timer: NodeJS.Timeout;
+    const currentFullText = ROTATING_QUESTIONS[index];
+
+    if (isDeleting) {
+      timer = setTimeout(() => {
+        setText((prev) => prev.slice(0, -1));
+      }, 30);
+    } else {
+      timer = setTimeout(() => {
+        setText((prev) => currentFullText.slice(0, prev.length + 1));
+      }, 60);
+    }
+
+    if (!isDeleting && text === currentFullText) {
+      timer = setTimeout(() => {
+        setIsDeleting(true);
+      }, 2000);
+    } else if (isDeleting && text === "") {
+      setIsDeleting(false);
+      setIndex((prev) => (prev + 1) % ROTATING_QUESTIONS.length);
+    }
+
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, index, reducedMotion]);
+
+  return <span>{text}</span>;
+}
 
 // Live AI Showcase scripted typing simulation hook
 function useTypingAnimation(text: string, trigger: boolean) {
@@ -135,30 +172,225 @@ function useTypingAnimation(text: string, trigger: boolean) {
   return displayedText;
 }
 
-// 4-step "How It Works" Connecting Line Animation Hook
-function useScrollProgress(ref: React.RefObject<HTMLDivElement>) {
+
+
+// Scrollytelling helper stage components
+function ScrollytellingStage1() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (!ref.current) return;
-      const rect = ref.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
+    if (!isInView) return;
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 5;
+      });
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isInView]);
 
-      const totalHeight = rect.height;
-      const visibleStart = windowHeight / 2;
-      const progressCalculated = Math.min(
-        Math.max((visibleStart - rect.top) / totalHeight, 0),
-        1
-      );
-      setProgress(progressCalculated);
-    };
+  return (
+    <div ref={ref} className="bg-surface border border-border p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center min-h-[220px]">
+      <motion.div
+        animate={isInView ? { scale: [0.9, 1.05, 1] } : {}}
+        transition={{ duration: 0.5 }}
+        className="h-14 w-14 bg-accent/10 border border-accent/20 rounded-2xl flex items-center justify-center text-accent mb-4 shadow-sm"
+      >
+        <FileSpreadsheet className="h-7 w-7" />
+      </motion.div>
+      <h4 className="font-sans font-bold text-sm text-foreground mb-1">regional_sales.csv</h4>
+      <p className="text-xs text-muted mb-3 font-mono">Size: 4.8 KB • 5 columns x 6 rows</p>
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [ref]);
+      <div className="w-48 bg-background h-2.5 rounded-full overflow-hidden border border-border relative">
+        <div className="bg-accent h-full transition-all duration-100" style={{ width: `${progress}%` }} />
+      </div>
+      <span className="text-[10px] font-bold text-accent mt-2 font-mono">{progress}% parsed</span>
+    </div>
+  );
+}
 
-  return progress;
+function ScrollytellingStage2() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <div ref={ref} className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+      <div className="bg-surface border border-border p-4 rounded-2xl shadow-sm h-64 flex flex-col justify-between">
+        <div>
+          <span className="text-[9px] font-mono uppercase font-bold text-muted block tracking-wider">Revenue Trend Over Time</span>
+          <span className="text-xs font-bold text-foreground mt-0.5 block">YTD Monthly Trend</span>
+        </div>
+        <div className="h-36 w-full text-[8px] mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={REGIONAL_SALES_DATA}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="month" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={25} />
+              <Tooltip />
+              <Line type="monotone" dataKey="West" stroke="var(--accent)" strokeWidth={2} dot={isInView} />
+              <Line type="monotone" dataKey="North" stroke="#818cf8" strokeWidth={1.5} dot={isInView} />
+              <Line type="monotone" dataKey="East" stroke="#f43f5e" strokeWidth={1.5} dot={isInView} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="bg-surface border border-border p-4 rounded-2xl shadow-sm h-64 flex flex-col justify-between">
+        <div>
+          <span className="text-[9px] font-mono uppercase font-bold text-muted block tracking-wider">Total Sales by Region</span>
+          <span className="text-xs font-bold text-foreground mt-0.5 block">YTD Cumulative Breakdown</span>
+        </div>
+        <div className="h-36 w-full text-[8px] mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={REGIONAL_TOTALS}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="region" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={25} />
+              <Tooltip />
+              <Bar dataKey="revenue" fill="var(--accent)" radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScrollytellingStage3() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const typedQuestion = useTypingAnimation("Which region grew fastest this quarter?", isInView);
+  const [showAnswer, setShowAnswer] = useState(false);
+
+  useEffect(() => {
+    if (isInView && typedQuestion.length === "Which region grew fastest this quarter?".length) {
+      const timer = setTimeout(() => {
+        setShowAnswer(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isInView, typedQuestion]);
+
+  return (
+    <div ref={ref} className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-[260px] w-full">
+      <div className="px-4 py-2 bg-surface-subtle border-b border-border flex items-center justify-between font-mono select-none">
+        <span className="text-[9px] text-muted uppercase font-bold tracking-widest">analytical_copilot.sh</span>
+      </div>
+      <div className="flex-1 p-4 flex flex-col justify-between space-y-4">
+        <div className="flex items-center space-x-2">
+          <span className="text-[#38bdf8] font-bold font-mono text-[10px]">$ ask</span>
+          <span className="text-white bg-slate-900 px-3 py-1.5 rounded-lg border border-border font-mono text-[10px] flex-1">
+            {typedQuestion}
+            <span className="animate-pulse">|</span>
+          </span>
+        </div>
+
+        {showAnswer && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4 flex-1 flex flex-col justify-between"
+          >
+            <div className="h-28 w-full text-[8px] select-none">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={REGIONAL_GROWTH}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="region" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={25} tickFormatter={(v) => `${v}%`} />
+                  <Tooltip />
+                  <Bar dataKey="growth" fill="var(--accent)" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="border-l-2 border-accent pl-3 text-[10px] text-foreground italic leading-relaxed">
+              &quot;The West region led with 68% growth, outpacing all other regions this quarter.&quot;
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScrollytellingStage4() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  return (
+    <div ref={ref} className="bg-surface border border-border p-5 rounded-2xl shadow-sm h-[260px] flex flex-col justify-between w-full">
+      <div>
+        <span className="text-[9px] font-mono uppercase font-bold text-accent block tracking-wider">Advanced Python Forecast</span>
+        <h4 className="text-xs font-bold text-foreground mt-0.5">West Region Trend & Projections</h4>
+      </div>
+      <div className="h-32 w-full text-[8px] mt-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={WEST_TREND_DATA}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis dataKey="month" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+            <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={25} />
+            <Tooltip />
+            <Line type="monotone" dataKey="actual" name="Actual Sales" stroke="var(--accent)" strokeWidth={2} dot={isInView ? { r: 2 } : false} />
+            <Line type="monotone" dataKey="forecast" name="Forecast" stroke="var(--accent)" strokeDasharray="3 3" strokeWidth={1.5} dot={isInView ? { r: 3, stroke: "var(--accent)", fill: "var(--bg)", strokeWidth: 1.5 } : false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="text-[9px] text-muted leading-normal font-normal">
+        * Based on serverless Python linear fit. Projected sales for July: <strong className="text-accent">$9,500</strong>, Aug: <strong className="text-accent">$10,600</strong>.
+      </p>
+    </div>
+  );
+}
+
+function ScrollytellingStage5() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [exported, setExported] = useState(false);
+
+  useEffect(() => {
+    if (isInView) {
+      const timer = setTimeout(() => {
+        setExported(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isInView]);
+
+  return (
+    <div ref={ref} className="bg-surface border border-border p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center min-h-[220px] w-full">
+      <AnimatePresence mode="wait">
+        {!exported ? (
+          <motion.div
+            key="exporting"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center space-y-3"
+          >
+            <RefreshCw className="h-8 w-8 text-accent animate-spin" />
+            <span className="text-xs font-semibold text-foreground">Assembling high-fidelity PDF report...</span>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="complete"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center space-y-3"
+          >
+            <div className="h-10 w-10 rounded-full bg-success/15 border border-success/30 text-success flex items-center justify-center">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+            <span className="text-xs font-bold text-foreground">regional_sales_report.pdf</span>
+            <span className="text-[10px] text-muted font-mono bg-background px-2 py-0.5 rounded border border-border">Download complete</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 function HomeContent() {
@@ -170,6 +402,8 @@ function HomeContent() {
   const [parsedData, setParsedData] = useState<ParsedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [heroInputFocused, setHeroInputFocused] = useState(false);
+  const [heroInputValue, setHeroInputValue] = useState("");
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -606,58 +840,6 @@ function HomeContent() {
     }
   };
 
-  // 4-step elements trigger refs
-  const stepsContainerRef = useRef<HTMLDivElement>(null);
-  const scrollProgress = useScrollProgress(stepsContainerRef);
-
-  // Live AI Showcase trigger refs
-  const liveShowcaseRef = useRef<HTMLDivElement>(null);
-  const isLiveShowcaseInView = useInView(liveShowcaseRef, { once: true, margin: "-100px" });
-
-  const typedQuestion = useTypingAnimation(
-    "Which region had the highest revenue growth this quarter?",
-    isLiveShowcaseInView
-  );
-
-  const [showShowcaseLoader, setShowShowcaseLoader] = useState(false);
-  const [showShowcaseChart, setShowShowcaseChart] = useState(false);
-  const [showShowcaseExpl, setShowShowcaseExpl] = useState(false);
-
-  useEffect(() => {
-    if (!isLiveShowcaseInView) return;
-
-    // Once typing is complete, show translation loader
-    const loaderTimer = setTimeout(() => {
-      setShowShowcaseLoader(true);
-    }, typedQuestion.length * 50 + 400);
-
-    // Render chart and explanation after loading completes
-    const renderTimer = setTimeout(() => {
-      setShowShowcaseLoader(false);
-      setShowShowcaseChart(true);
-    }, typedQuestion.length * 50 + 1800);
-
-    const explanationTimer = setTimeout(() => {
-      setShowShowcaseExpl(true);
-    }, typedQuestion.length * 50 + 2600);
-
-    return () => {
-      clearTimeout(loaderTimer);
-      clearTimeout(renderTimer);
-      clearTimeout(explanationTimer);
-    };
-  }, [isLiveShowcaseInView, typedQuestion.length]);
-
-  // Animated Statistics stats triggers
-  const statsRef = useRef<HTMLDivElement>(null);
-  const isStatsInView = useInView(statsRef, { once: true, margin: "-100px" });
-
-  const SHOWCASE_REGIONS_DATA = [
-    { region: "North Region", growth: 12 },
-    { region: "East Region", growth: 7 },
-    { region: "West Region", growth: 18 },
-    { region: "South Region", growth: 5 },
-  ];
 
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-6 space-y-12 relative z-10">
@@ -714,17 +896,17 @@ function HomeContent() {
 
       {/* SaaS Premium Homepage (when no file is successfully parsed) */}
       {!parsedData && (
-        <div className="space-y-24 py-4 relative">
+        <div className="space-y-32 py-8 relative">
 
-          {/* 1. HERO SECTION */}
-          <section className="relative pt-8 pb-12 overflow-hidden flex flex-col items-center">
+          {/* 1. HERO — Question First */}
+          <section className="relative pt-12 pb-16 overflow-hidden flex flex-col items-center">
             {/* Background elements */}
             <div className="absolute inset-0 z-0">
               <AuroraBackground />
               <FloatingAIIcons />
             </div>
 
-            <div className="max-w-4xl text-center space-y-6 relative z-10 mb-16 px-4">
+            <div className="max-w-4xl text-center space-y-8 relative z-10 mb-16 px-4">
               <motion.div
                 initial={reducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -732,7 +914,7 @@ function HomeContent() {
                 className="inline-flex items-center space-x-2 bg-accent/10 border border-accent/20 px-3.5 py-1.5 rounded-full text-[10px] font-bold text-accent uppercase tracking-widest"
               >
                 <Zap className="h-3 w-3 fill-accent text-accent" />
-                <span>Next-Gen Browser Business Intelligence</span>
+                <span>Zero-Upload Browser Business Intelligence</span>
               </motion.div>
 
               <motion.h1
@@ -741,504 +923,310 @@ function HomeContent() {
                 transition={{ duration: 0.6, delay: 0.1 }}
                 className="text-4xl sm:text-5xl md:text-6xl font-sans font-extrabold tracking-tight text-foreground leading-[1.1]"
               >
-                Unlock instant insights <br className="hidden sm:inline" />
-                directly from your browser.
+                Ask your database anything.<br />Get answers instantly.
               </motion.h1>
 
-              <motion.p
+              {/* REAL feeling, functional input centerpiece */}
+              <motion.div
                 initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-sm sm:text-base md:text-lg text-muted max-w-2xl mx-auto leading-relaxed"
+                className="relative max-w-2xl mx-auto w-full group"
               >
-                Upload any CSV or Excel file to automatically build interactive visual dashboards, execute low-latency in-memory SQL, and run conversational statistical forecasts without your data ever leaving your machine.
-              </motion.p>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={heroInputValue}
+                    onChange={(e) => setHeroInputValue(e.target.value)}
+                    onFocus={() => {
+                      setHeroInputFocused(true);
+                      setTimeout(() => {
+                        handleScrollToSection("upload-zone");
+                      }, 1800);
+                    }}
+                    onBlur={() => setHeroInputFocused(false)}
+                    placeholder=""
+                    className="w-full bg-surface border border-border hover:border-text-secondary/60 focus:border-accent rounded-2xl py-4 pl-5 pr-12 text-sm text-foreground outline-none transition-all focus:ring-2 focus:ring-accent/10 placeholder-muted/30"
+                  />
+                  {heroInputValue === "" && (
+                    <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none text-muted select-none text-sm font-medium">
+                      <span className="text-accent font-bold mr-1">&gt;</span>
+                      <TypewriterPlaceholder reducedMotion={reducedMotion} />
+                      <span className="border-r-2 border-accent ml-0.5 animate-pulse h-4" />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      setHeroInputFocused(true);
+                      handleScrollToSection("upload-zone");
+                    }}
+                    className="absolute right-3 top-2.5 h-9 w-9 bg-accent text-white rounded-xl flex items-center justify-center hover:opacity-90 transition-all shadow-md shadow-accent/15"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
 
-              <motion.div
+                {/* Smooth dropdown/inline warning alert under input */}
+                <AnimatePresence>
+                  {heroInputFocused && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -6, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden mt-3 text-left"
+                    >
+                      <div className="bg-accent/10 border border-accent/20 p-3 rounded-xl flex items-center space-x-2 text-accent">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span className="text-xs font-semibold">Upload your data first below, then ask anything. Page scrolling...</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              <motion.p
                 initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="flex flex-wrap items-center justify-center gap-4 pt-2"
+                transition={{ duration: 0.6, delay: 0.35 }}
+                className="text-xs text-muted max-w-md mx-auto"
               >
-                <MagneticButton
-                  onClick={() => handleScrollToSection("upload-zone")}
-                  className="flex items-center space-x-1.5 px-6 py-3 bg-accent text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-accent/15 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <span>Upload your data</span>
-                  <ArrowRight className="h-4 w-4" />
-                </MagneticButton>
-
-                <button
-                  onClick={() => handleScrollToSection("how-it-works")}
-                  className="flex items-center space-x-1.5 px-5 py-3 bg-surface hover:bg-surface-subtle border border-border text-foreground font-semibold rounded-xl text-sm transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                >
-                  <span>See how it works</span>
-                </button>
-              </motion.div>
+                An AI-powered local business intelligence sandbox.
+              </motion.p>
             </div>
 
-            {/* Dashboard Mock Preview Frame with Floating KPI cards */}
-            <div className="relative w-full max-w-4xl px-4 z-10 flex justify-center">
-              {/* Card 1: Revenue */}
-              <div
-                className={`absolute left-[-20px] top-[15%] z-20 bg-surface/95 border border-border p-4 rounded-xl flex flex-col justify-between shadow-lg backdrop-blur-md max-w-[140px] select-none ${
-                  reducedMotion ? "" : "animate-[float_6s_ease-in-out_infinite]"
-                }`}
-              >
-                <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Revenue</span>
-                <span className="text-base font-extrabold text-foreground mt-1 truncate">+12.4% MoM</span>
-              </div>
-
-              {/* Card 2: Rows analyzed */}
-              <div
-                className={`absolute right-[-10px] top-[40%] z-20 bg-surface/95 border border-border p-4 rounded-xl flex flex-col justify-between shadow-lg backdrop-blur-md max-w-[140px] select-none ${
-                  reducedMotion ? "" : "animate-[float_6.5s_ease-in-out_infinite_1.5s]"
-                }`}
-              >
-                <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Processed</span>
-                <span className="text-base font-extrabold text-foreground mt-1 truncate">1,204 rows</span>
-              </div>
-
-              {/* Card 3: AI Insights */}
-              <div
-                className={`absolute left-[-10px] bottom-[10%] z-20 bg-surface/95 border border-border p-4 rounded-xl flex flex-col justify-between shadow-lg backdrop-blur-md max-w-[150px] select-none ${
-                  reducedMotion ? "" : "animate-[float_7s_ease-in-out_infinite_3s]"
-                }`}
-              >
-                <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider">Co-Pilot Core</span>
-                <span className="text-base font-extrabold text-foreground mt-1 truncate">3 AI insights</span>
-              </div>
-
-              {/* Preview Container Wrapper */}
-              <div className="w-full bg-surface border border-border rounded-2xl overflow-hidden shadow-xl flex flex-col h-[340px]">
-                {/* Titlebar Chrome */}
-                <div className="px-4 py-2.5 bg-surface-subtle border-b border-border flex items-center justify-between font-mono select-none">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-                  </div>
-                  <span className="text-[10px] text-muted uppercase font-bold tracking-widest">dashboard.preview</span>
-                  <div className="w-12" />
-                </div>
-
-                <div className="flex-1 p-6 flex flex-col justify-between select-none">
-                  <div>
-                    <span className="text-[10px] font-mono uppercase font-bold text-muted block tracking-wider">YTD Revenue Trend</span>
-                    <span className="text-lg font-bold text-foreground mt-1 block">$42,300.00 YTD</span>
-                  </div>
-
-                  <div className="h-44 w-full text-[10px] font-mono mt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={HERO_CHART_DATA} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                        <XAxis
-                          dataKey="quarter"
-                          stroke="var(--text-secondary)"
-                          tickLine={false}
-                          axisLine={false}
-                          dy={8}
-                        />
-                        <YAxis
-                          stroke="var(--text-secondary)"
-                          tickLine={false}
-                          axisLine={false}
-                          width={40}
-                          tickFormatter={(v) => `$${v / 1000}k`}
-                        />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: "var(--surface)", borderColor: "var(--border)", borderRadius: "6px" }}
-                          itemStyle={{ color: "var(--text-primary)" }}
-                          labelStyle={{ color: "var(--text-secondary)", fontWeight: "500" }}
-                          formatter={(v) => [`$${Number(v).toLocaleString()}`, "Revenue"]}
-                        />
-                        <defs>
-                          <linearGradient id="heroColorRevenue" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.2} />
-                            <stop offset="95%" stopColor="var(--accent)" stopOpacity={0.0} />
-                          </linearGradient>
-                        </defs>
-                        <Area
-                          type="monotone"
-                          dataKey="revenue"
-                          stroke="var(--accent)"
-                          strokeWidth={2}
-                          fillOpacity={1}
-                          fill="url(#heroColorRevenue)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 2. STANDALONE UPLOAD ZONE */}
-          <section id="upload-zone" className="scroll-mt-24 max-w-4xl mx-auto px-4">
-            <div className="text-center space-y-2 mb-8">
-              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block">Core Input</span>
-              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                Secure Data Upload Portal
-              </h2>
-              <p className="text-xs sm:text-sm text-muted max-w-md mx-auto leading-relaxed">
-                Parse datasets in real-time. Zero network uploads. Zero cookies or privacy compromises.
-              </p>
-            </div>
-
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={triggerFileBrowser}
-              className={`w-full min-h-[220px] bg-surface hover:bg-surface-subtle/50 border border-border border-dashed hover:border-text-secondary/60 rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group ${
-                isDragging ? "bg-accent/10 border-solid border-accent scale-[0.98]" : "shadow-xs"
-              }`}
-            >
-              <div className="absolute top-0 left-0 w-full h-1 bg-accent/40 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-
-              <div className="h-12 w-12 bg-background border border-border rounded-xl flex items-center justify-center text-accent shadow-sm mb-4">
-                <Upload className="h-5 w-5" />
-              </div>
-
-              <div className="space-y-1.5 font-sans">
-                <div className="flex items-center justify-center space-x-1.5 text-xs sm:text-sm text-foreground font-bold">
-                  <span className="text-accent">&gt;</span>
-                  <span>Drag & drop CSV or Excel spreadsheet here</span>
-                </div>
-                <p className="text-xs text-muted">
-                  or <span className="text-accent underline font-semibold">browse your system directory</span>
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] text-muted/60 mt-6 uppercase tracking-wider font-extrabold font-mono">
-                <span>CSV</span>
-                <span>•</span>
-                <span>XLSX</span>
-                <span>•</span>
-                <span>XLS</span>
-                <span>•</span>
-                <span>Max Size 5MB</span>
-              </div>
-
-              {isPending && (
-                <div className="mt-4 flex items-center space-x-2 text-[11px] text-accent font-bold">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span>Parsing Columns & Aligning Types...</span>
-                </div>
-              )}
-
-              {error && (
-                <div className="mt-4 flex items-start space-x-2.5 text-left p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-500 max-w-sm">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>{error}</span>
-                </div>
-              )}
-            </div>
-
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileInputChange}
-              accept=".csv,.xlsx,.xls"
-              className="hidden"
-            />
-          </section>
-
-          {/* 3. FEATURES SECTION — Bento Grid */}
-          <section id="features" className="scroll-mt-24 space-y-12">
-            <div className="text-center space-y-2">
-              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block font-mono">Advanced Capabilities</span>
-              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                Premium Analytical Toolkit
-              </h2>
-              <p className="text-xs sm:text-sm text-muted max-w-sm mx-auto leading-relaxed">
-                Enterprise power, zero server infrastructure. Optimized for immediate exploration.
-              </p>
-            </div>
-
-            {/* Bento Grid Layout (Uniform responsive sizes) */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-              {/* Card 1: Instant Dashboards (Span 7) */}
-              <div className="md:col-span-7 bg-surface border border-border/80 p-6 rounded-2xl flex flex-col justify-between hover:border-text-secondary transition-all duration-300 shadow-xs relative group overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-accent/30 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-                <div className="space-y-4">
-                  <div className="h-10 w-10 bg-background border border-border rounded-xl flex items-center justify-center text-accent">
-                    <LayoutDashboard className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-sm font-bold text-foreground">Instant Interactive Dashboards</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Reorder, customize, and add custom metrics instantly. Automatic chart generation adapts to detected columns and data shapes on the fly.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 2: AI text-to-SQL (Span 5) */}
-              <div className="md:col-span-5 bg-surface border border-border/80 p-6 rounded-2xl flex flex-col justify-between hover:border-text-secondary transition-all duration-300 shadow-xs relative group overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-accent/30 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-                <div className="space-y-4">
-                  <div className="h-10 w-10 bg-background border border-border rounded-xl flex items-center justify-center text-accent">
-                    <Bot className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-sm font-bold text-foreground">Conversational AI Co-Pilot</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Converse in plain natural English. The Gemini model automatically structures clean SQL queries, executes them locally, and plots visual results.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3: In-browser DuckDB (Span 4) */}
-              <div className="md:col-span-4 bg-surface border border-border/80 p-6 rounded-2xl flex flex-col justify-between hover:border-text-secondary transition-all duration-300 shadow-xs relative group overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-accent/30 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-                <div className="space-y-4">
-                  <div className="h-10 w-10 bg-background border border-border rounded-xl flex items-center justify-center text-accent">
-                    <Database className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-sm font-bold text-foreground">DuckDB SQL Engine</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Runs raw analytical SQL queries directly in-memory via DuckDB-WASM at native speeds, without any server-side database latency.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 4: Python Stats (Span 4) */}
-              <div className="md:col-span-4 bg-surface border border-border/80 p-6 rounded-2xl flex flex-col justify-between hover:border-text-secondary transition-all duration-300 shadow-xs relative group overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-accent/30 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-                <div className="space-y-4">
-                  <div className="h-10 w-10 bg-background border border-border rounded-xl flex items-center justify-center text-accent">
-                    <Cpu className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-sm font-bold text-foreground">Python Statistical Layer</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Evaluate robust statistics seamlessly. Spawn linear trend forecasts, find statistical outliers using IQR, and examine Pearson correlations.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 5: PDF Export & Privacy (Span 4) */}
-              <div className="md:col-span-4 bg-surface border border-border/80 p-6 rounded-2xl flex flex-col justify-between hover:border-text-secondary transition-all duration-300 shadow-xs relative group overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-accent/30 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
-                <div className="space-y-4">
-                  <div className="h-10 w-10 bg-background border border-border rounded-xl flex items-center justify-center text-accent">
-                    <Lock className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-sm font-bold text-foreground">Local PDF Export & Privacy</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Compile dynamic layouts to PDF. Rest easy knowing raw spreadsheet data is parsed local-only and never synced to external databases.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 4. "HOW IT WORKS" SECTION — 4 animated steps */}
-          <section id="how-it-works" className="scroll-mt-24 space-y-12">
-            <div className="text-center space-y-2">
-              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block font-mono">Product Roadmap</span>
-              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                Seamless Four-Step Workflow
-              </h2>
-              <p className="text-xs sm:text-sm text-muted max-w-xs mx-auto leading-relaxed">
-                A simple, friction-free pipeline from raw data to production-ready exports.
-              </p>
-            </div>
-
-            <div ref={stepsContainerRef} className="relative max-w-4xl mx-auto px-4 py-8">
-              {/* Connecting Line */}
-              {!reducedMotion && (
-                <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-border -translate-x-1/2 hidden md:block">
-                  <div
-                    className="absolute top-0 left-0 right-0 bg-accent transition-all duration-300"
-                    style={{ height: `${scrollProgress * 100}%` }}
-                  />
-                </div>
-              )}
-
-              <div className="space-y-16">
-                {/* Step 1 */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
-                  <div className="w-full md:w-1/2 md:text-right space-y-2 order-2 md:order-1">
-                    <span className="text-[10px] font-mono text-accent font-bold">01. DROP OR BROWSE</span>
-                    <h3 className="text-sm font-bold text-foreground">Secure Client-Side Upload</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Select any local CSV or Excel document. Parsed entirely within your browser memory utilizing high-fidelity parsing helpers. No backend records are generated.
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-extrabold text-xs z-10 order-1 md:order-2 shrink-0 shadow-sm">
-                    1
-                  </div>
-                  <div className="w-full md:w-1/2 order-3" />
-                </div>
-
-                {/* Step 2 */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
-                  <div className="w-full md:w-1/2 order-3 md:order-1" />
-                  <div className="w-12 h-12 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-extrabold text-xs z-10 order-1 md:order-2 shrink-0 shadow-sm">
-                    2
-                  </div>
-                  <div className="w-full md:w-1/2 text-left space-y-2 order-2 shrink-0">
-                    <span className="text-[10px] font-mono text-accent font-bold">02. AUTO ANALYSIS</span>
-                    <h3 className="text-sm font-bold text-foreground">Instant Layout Compilation</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      View responsive dashboards tracking KPI aggregations, timelines, categorizations, and detailed statistical insights built automatically on upload.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Step 3 */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
-                  <div className="w-full md:w-1/2 md:text-right space-y-2 order-2 md:order-1">
-                    <span className="text-[10px] font-mono text-accent font-bold">03. ASK CO-PILOT</span>
-                    <h3 className="text-sm font-bold text-foreground">Conversational AI Chat</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Ask business questions directly. The co-pilot writes safe SQL, queries your in-memory browser database, and delivers graphical and text-based explanations instantly.
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-extrabold text-xs z-10 order-1 md:order-2 shrink-0 shadow-sm">
-                    3
-                  </div>
-                  <div className="w-full md:w-1/2 order-3" />
-                </div>
-
-                {/* Step 4 */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-16">
-                  <div className="w-full md:w-1/2 order-3 md:order-1" />
-                  <div className="w-12 h-12 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-extrabold text-xs z-10 order-1 md:order-2 shrink-0 shadow-sm">
-                    4
-                  </div>
-                  <div className="w-full md:w-1/2 text-left space-y-2 order-2 shrink-0">
-                    <span className="text-[10px] font-mono text-accent font-bold">04. PERSIST & EXPORT</span>
-                    <h3 className="text-sm font-bold text-foreground">High-Fidelity PDF Export</h3>
-                    <p className="text-xs text-muted leading-relaxed font-normal">
-                      Generate professional-grade PDF reports of your customized dashboard configurations. Save definitions securely for instant reloading via reactivation codes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 5. LIVE AI SHOWCASE SECTION */}
-          <section id="ai-showcase" className="scroll-mt-24 space-y-12 max-w-4xl mx-auto px-4">
-            <div className="text-center space-y-2">
-              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block font-mono">Live Simulation</span>
-              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                Conversational SQL Co-Pilot in Action
-              </h2>
-              <p className="text-xs sm:text-sm text-muted max-w-sm mx-auto leading-relaxed">
-                Watch how natural language is translated to physical SQL queries executed instantly.
-              </p>
-            </div>
-
-            {/* Showcase terminal container */}
-            <div ref={liveShowcaseRef} className="bg-[#141210] border border-border rounded-2xl overflow-hidden shadow-xl flex flex-col min-h-[380px] text-emerald-400 font-mono text-[11px] sm:text-xs">
-              {/* Chrome header */}
-              <div className="px-4 py-2.5 bg-surface-subtle border-b border-border flex items-center justify-between select-none">
-                <div className="flex items-center space-x-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-border" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-border" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-border" />
-                </div>
-                <span className="text-[10px] text-muted uppercase font-bold tracking-widest">ai-analyst-session.sh</span>
-                <div className="w-12" />
-              </div>
-
-              {/* Console log */}
-              <div className="flex-1 p-6 space-y-6 flex flex-col justify-between">
-                <div className="space-y-4">
-                  {/* Prompt */}
+            {/* Split Visual Layout Beneath centerpiece */}
+            <div className="w-full max-w-4xl px-4 z-10 grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+              {/* LEFT Pane: Mock Question */}
+              <div className="bg-surface/80 border border-border rounded-2xl p-6 flex flex-col justify-between shadow-lg h-60">
+                <div className="space-y-3">
+                  <span className="text-[10px] font-mono text-accent uppercase font-bold tracking-widest block">Core Mechanism — Ask</span>
                   <div className="flex items-start space-x-2">
-                    <span className="text-[#38bdf8] font-bold shrink-0">$ ask_copilot</span>
-                    <span className="text-white border-r-2 border-white pr-1 animate-pulse">
-                      {typedQuestion || <span className="text-muted/40 italic">Listening for trigger...</span>}
+                    <span className="text-accent font-bold font-mono mt-0.5">&gt;</span>
+                    <span className="text-sm font-extrabold text-foreground leading-normal">
+                      What drove Q3 growth?
                     </span>
                   </div>
+                </div>
+                <div className="border-t border-border/60 pt-3 flex items-center justify-between text-[10px] text-muted font-mono font-bold">
+                  <span>INPUT CHANNEL</span>
+                  <span>MOCK USER PROMPT</span>
+                </div>
+              </div>
 
-                  {/* Loader */}
-                  {showShowcaseLoader && (
-                    <div className="text-[#38bdf8]/70 flex items-center space-x-2 animate-pulse">
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Gemini-2.5-flash translating to DuckDB Analytical SQL...</span>
+              {/* RIGHT Pane: Corresponding Output */}
+              <div className="bg-surface/80 border border-border rounded-2xl p-6 flex flex-col justify-between shadow-lg h-60 overflow-hidden">
+                <div className="h-32 w-full text-[9px] select-none">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={HERO_CHART_DATA} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                      <XAxis dataKey="quarter" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+                      <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={30} />
+                      <Bar dataKey="revenue" fill="var(--accent)" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="border-t border-border/60 pt-3 space-y-1.5">
+                  <span className="text-[9px] font-mono text-success uppercase font-bold tracking-widest block">OUTPUT RESPONSE — AI Co-pilot</span>
+                  <p className="text-[11px] text-foreground font-normal leading-normal">
+                    Q3 revenue grew 18% quarter-over-quarter, led by a strong rebound in enterprise accounts.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 2. SCROLLYTELLING NARRATIVE */}
+          <section className="max-w-4xl mx-auto px-4 space-y-24">
+            <div className="text-center space-y-3 max-w-xl mx-auto">
+              <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block">SaaS Narrative</span>
+              <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                How InsightLoop works
+              </h2>
+              <p className="text-xs sm:text-sm text-muted leading-relaxed">
+                Follow one sample Regional Sales Performance dataset continuously across its entire workflow journey in real-time.
+              </p>
+            </div>
+
+            {/* Timeline Stages */}
+            <div className="space-y-32 relative">
+              {/* Connected center line */}
+              <div className="absolute left-1/2 top-4 bottom-4 w-[2px] bg-border -translate-x-1/2 hidden md:block" />
+
+              {/* Stage 1 */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                <div className="md:col-span-5 md:text-right space-y-2 order-2 md:order-1">
+                  <span className="text-[10px] font-mono text-accent font-bold">STAGE 01</span>
+                  <h3 className="text-base font-extrabold text-foreground tracking-tight">A spreadsheet arrives</h3>
+                  <p className="text-xs text-muted leading-relaxed font-normal">
+                    Drop in any CSV or Excel file. Your browser parses spreadsheet schemas, columns, and data types entirely locally in browser memory.
+                  </p>
+                </div>
+                <div className="md:col-span-2 flex justify-center z-10 order-1 md:order-2">
+                  <div className="w-10 h-10 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-bold text-xs shadow-sm">
+                    1
+                  </div>
+                </div>
+                <div className="md:col-span-5 order-3">
+                  <ScrollytellingStage1 />
+                </div>
+              </div>
+
+              {/* Stage 2 */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                <div className="md:col-span-5 order-3 md:order-1">
+                  <ScrollytellingStage2 />
+                </div>
+                <div className="md:col-span-2 flex justify-center z-10 order-1 md:order-2">
+                  <div className="w-10 h-10 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-bold text-xs shadow-sm">
+                    2
+                  </div>
+                </div>
+                <div className="md:col-span-5 text-left space-y-2 order-2">
+                  <span className="text-[10px] font-mono text-accent font-bold">STAGE 02</span>
+                  <h3 className="text-base font-extrabold text-foreground tracking-tight">Instantly organized</h3>
+                  <p className="text-xs text-muted leading-relaxed font-normal">
+                    InsightLoop automatically builds gorgeous responsive charts, timelines, aggregates, and categories depending on your file&apos;s data shape.
+                  </p>
+                </div>
+              </div>
+
+              {/* Stage 3 */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                <div className="md:col-span-5 md:text-right space-y-2 order-2 md:order-1">
+                  <span className="text-[10px] font-mono text-accent font-bold">STAGE 03</span>
+                  <h3 className="text-base font-extrabold text-foreground tracking-tight">Ask it anything</h3>
+                  <p className="text-xs text-muted leading-relaxed font-normal">
+                    Ask natural questions. The AI Co-pilot writes compliant DuckDB SQL queries, runs them against the browser sandbox, and draws focused results.
+                  </p>
+                </div>
+                <div className="md:col-span-2 flex justify-center z-10 order-1 md:order-2">
+                  <div className="w-10 h-10 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-bold text-xs shadow-sm">
+                    3
+                  </div>
+                </div>
+                <div className="md:col-span-5 order-3">
+                  <ScrollytellingStage3 />
+                </div>
+              </div>
+
+              {/* Stage 4 */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                <div className="md:col-span-5 order-3 md:order-1">
+                  <ScrollytellingStage4 />
+                </div>
+                <div className="md:col-span-2 flex justify-center z-10 order-1 md:order-2">
+                  <div className="w-10 h-10 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-bold text-xs shadow-sm">
+                    4
+                  </div>
+                </div>
+                <div className="md:col-span-5 text-left space-y-2 order-2">
+                  <span className="text-[10px] font-mono text-accent font-bold">STAGE 04</span>
+                  <h3 className="text-base font-extrabold text-foreground tracking-tight">Deeper patterns surface</h3>
+                  <p className="text-xs text-muted leading-relaxed font-normal">
+                    Trigger serverless Python statistics on the fly. Explore linear trend forecasting, IQR outlier models, and correlation matrices in one click.
+                  </p>
+                </div>
+              </div>
+
+              {/* Stage 5 */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                <div className="md:col-span-5 md:text-right space-y-2 order-2 md:order-1">
+                  <span className="text-[10px] font-mono text-accent font-bold">STAGE 05</span>
+                  <h3 className="text-base font-extrabold text-foreground tracking-tight">Take it with you</h3>
+                  <p className="text-xs text-muted leading-relaxed font-normal">
+                    Export high-fidelity, printable multi-page PDF reports. Save layout templates securely for instant recreation later.
+                  </p>
+                </div>
+                <div className="md:col-span-2 flex justify-center z-10 order-1 md:order-2">
+                  <div className="w-10 h-10 rounded-full border-2 border-border bg-background flex items-center justify-center text-accent font-bold text-xs shadow-sm">
+                    5
+                  </div>
+                </div>
+                <div className="md:col-span-5 order-3">
+                  <ScrollytellingStage5 />
+                </div>
+              </div>
+
+              {/* Stage 6 - Climax / Real Upload Zone */}
+              <div id="upload-zone" className="scroll-mt-24 pt-16 border-t border-border/40">
+                <div className="text-center space-y-3 mb-8 max-w-xl mx-auto">
+                  <span className="text-[10px] uppercase font-extrabold text-accent tracking-widest block">STAGE 06</span>
+                  <h2 className="font-sans text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                    Now try it with your own data
+                  </h2>
+                  <p className="text-xs sm:text-sm text-muted leading-relaxed">
+                    InsightLoop runs 100% locally. No data rows leave your machine. Secure, immediate local analytics sandbox.
+                  </p>
+                </div>
+
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={triggerFileBrowser}
+                  className={`w-full min-h-[220px] bg-surface hover:bg-surface-subtle/50 border border-border border-dashed hover:border-text-secondary/60 rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group ${
+                    isDragging ? "bg-accent/10 border-solid border-accent scale-[0.98]" : "shadow-xs"
+                  }`}
+                >
+                  <div className="absolute top-0 left-0 w-full h-1 bg-accent/40 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
+
+                  <div className="h-12 w-12 bg-background border border-border rounded-xl flex items-center justify-center text-accent shadow-sm mb-4">
+                    <Upload className="h-5 w-5" />
+                  </div>
+
+                  <div className="space-y-1.5 font-sans">
+                    <div className="flex items-center justify-center space-x-1.5 text-xs sm:text-sm text-foreground font-bold">
+                      <span className="text-accent">&gt;</span>
+                      <span>Drag & drop CSV or Excel spreadsheet here</span>
+                    </div>
+                    <p className="text-xs text-muted">
+                      or <span className="text-accent underline font-semibold">browse your system directory</span>
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] text-muted/60 mt-6 uppercase tracking-wider font-extrabold font-mono">
+                    <span>CSV</span>
+                    <span>•</span>
+                    <span>XLSX</span>
+                    <span>•</span>
+                    <span>XLS</span>
+                    <span>•</span>
+                    <span>Max Size 5MB</span>
+                  </div>
+
+                  {isPending && (
+                    <div className="mt-4 flex items-center space-x-2 text-[11px] text-accent font-bold">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      <span>Parsing Columns & Aligning Types...</span>
                     </div>
                   )}
 
-                  {/* Chart response comparing regions */}
-                  {showShowcaseChart && (
-                    <div className="space-y-4 animate-fade-in">
-                      <div className="bg-[#1e1c1a] p-3.5 rounded-xl border border-[#38bdf8]/10 text-white leading-normal whitespace-pre overflow-x-auto text-[10px]">
-                        {`SELECT region, (SUM(revenue_current) - SUM(revenue_last)) / SUM(revenue_last) * 100 AS growth_rate\nFROM dataset\nGROUP BY 1 ORDER BY 2 DESC;`}
-                      </div>
-
-                      <div className="h-44 w-full select-none text-white bg-[#1e1c1a]/40 p-4 rounded-xl border border-border/40">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={SHOWCASE_REGIONS_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#2a2826" vertical={false} />
-                            <XAxis
-                              dataKey="region"
-                              stroke="#a8a29e"
-                              tickLine={false}
-                              axisLine={false}
-                              dy={8}
-                            />
-                            <YAxis
-                              stroke="#a8a29e"
-                              tickLine={false}
-                              axisLine={false}
-                              width={35}
-                              tickFormatter={(v) => `${v}%`}
-                            />
-                            <Bar
-                              dataKey="growth"
-                              name="Revenue Growth Rate"
-                              fill="var(--accent)"
-                              radius={[2, 2, 0, 0]}
-                            />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                  {error && (
+                    <div className="mt-4 flex items-start space-x-2.5 text-left p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-500 max-w-sm">
+                      <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                      <span>{error}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Explanation text appearing below it */}
-                {showShowcaseExpl && (
-                  <div className="text-white border-l-2 border-emerald-500 pl-3.5 animate-fade-in leading-relaxed text-xs">
-                    The <strong className="text-emerald-400">West region</strong> led with 18% quarter-over-quarter growth, driven largely by a spike in enterprise account signups in March.
-                  </div>
-                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileInputChange}
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                />
               </div>
+
             </div>
           </section>
 
-          {/* 6. ANIMATED STATISTICS COUNTERS */}
-          <section ref={statsRef} className="scroll-mt-24 max-w-4xl mx-auto px-4">
-            <div className="bg-surface border border-border rounded-2xl p-8 sm:p-10 shadow-xs relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-accent/5 to-transparent pointer-events-none" />
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 justify-center relative z-10">
-                <AnimatedCounter value={3} label="Stat models" trigger={isStatsInView} />
-                <AnimatedCounter value={100} label="% client-side processing" trigger={isStatsInView} />
-                <AnimatedCounter value={2} label="File formats supported" trigger={isStatsInView} />
-                <AnimatedCounter value={1} label="AI analyst, unlimited Qs" trigger={isStatsInView} />
-              </div>
-            </div>
-          </section>
-
-          {/* 7. "PRICING" SECTION — Free & Open Centered Panel */}
-          <section id="pricing" className="scroll-mt-24 max-w-2xl mx-auto px-4">
+          {/* Pricing commitments & badges section */}
+          <section id="pricing" className="scroll-mt-24 max-w-2xl mx-auto px-4 pt-12">
             <div className="bg-slate-50/80 dark:bg-slate-900/30 border border-accent/20 dark:border-accent/30 rounded-2xl p-8 sm:p-10 shadow-xl shadow-accent/5 hover:shadow-accent/10 hover:border-accent/40 transition-all text-center space-y-6 relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-500" />
 
-              {/* Subtle decorative background watermark to avoid collisions and text overlap */}
               <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none z-0 overflow-hidden">
                 <span className="text-accent opacity-[0.04] dark:opacity-[0.06] font-extrabold text-[120px] font-mono tracking-widest uppercase">
                   FREE
@@ -1282,34 +1270,8 @@ function HomeContent() {
             </div>
           </section>
 
-          {/* 9. FINAL CTA SECTION */}
-          <section className="bg-surface border border-border rounded-2xl p-10 sm:p-14 text-center space-y-6 max-w-4xl mx-auto px-4 relative overflow-hidden shadow-xs">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-accent/5 pointer-events-none" />
-
-            <div className="max-w-2xl mx-auto space-y-4 relative z-10">
-              <h2 className="font-sans text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">
-                Ready to explore your spreadsheets?
-              </h2>
-              <p className="text-xs sm:text-sm text-muted leading-relaxed font-normal">
-                No credit cards. No deployment setups. Drop in your local data files and immediately start conversing with an intelligence engine on your terms.
-              </p>
-            </div>
-
-            <div className="pt-2 relative z-10">
-              <button
-                onClick={() => handleScrollToSection("upload-zone")}
-                className="flex items-center justify-center space-x-1.5 px-6 py-3 bg-accent hover:opacity-90 text-white font-semibold rounded-xl text-sm transition-all mx-auto shadow-lg shadow-accent/15 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-              >
-                <span>Upload your document</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </section>
-
         </div>
-      )}
-
-      {/* Active Workspace Header Bar (when file is successfully parsed) */}
+      )}      {/* Active Workspace Header Bar (when file is successfully parsed) */}
       {parsedData && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6 pt-6">
           <div>
@@ -1514,24 +1476,6 @@ function HomeContent() {
             />
           </div>
 
-          {/* 🧠 Python Advanced Insights Section */}
-          <div id="advanced-insights-section" className="pt-6 border-t border-border space-y-3">
-            <AdvancedInsights
-              parsedData={parsedData}
-              datasetLoaded={datasetLoaded}
-              runQuery={runQuery}
-            />
-          </div>
-
-          {/* 💬 AI Text-to-SQL Co-Pilot Section */}
-          <div id="chat-panel" className="pt-6 border-t border-border space-y-3">
-            <ChatPanel
-              datasetLoaded={datasetLoaded}
-              schema={parsedData.schema}
-              runQuery={runQuery}
-              dashboardId={dashboardId}
-            />
-          </div>
 
           {/* 🛠️ Debug SQL Console */}
           <div className="bg-surface border border-border rounded-xl overflow-hidden flex flex-col shadow-sm">

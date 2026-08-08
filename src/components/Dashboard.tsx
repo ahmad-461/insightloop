@@ -4,8 +4,6 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   TrendingUp,
   BarChart3,
-  Hash,
-  DollarSign,
   AlertCircle,
   Sparkles,
   ChevronUp,
@@ -16,7 +14,8 @@ import {
   RefreshCw,
   X,
   CheckCircle2,
-  Download
+  Download,
+  MessageSquare
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -27,13 +26,15 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  Legend
+  Tooltip
 } from "recharts";
 import { ParsedResult, ColumnType } from "@/utils/parser";
 import { formatNumber } from "@/utils/formatter";
 import { getOrCreateSessionId } from "@/utils/session";
 import { supabase } from "@/utils/supabaseClient";
+import ChatPanel from "./ChatPanel";
+import AdvancedInsights from "./AdvancedInsights";
+import { AnimatePresence, motion } from "framer-motion";
 
 // Widget Layout Config Interface
 export interface WidgetConfig {
@@ -63,6 +64,34 @@ interface DashboardProps {
   setDashboardId: (id: string | null) => void;
 }
 
+function generateLocalHeuristicCaption(widget: WidgetConfig, data: Record<string, unknown>[]): string {
+  if (!data || data.length === 0) return "No data available for analysis.";
+
+  if (widget.type === "line") {
+    const values = data.map(d => Number(d.total_val ?? 0)).filter(v => !isNaN(v));
+    if (values.length === 0) return `${widget.title}: Data analysis complete.`;
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const avgVal = values.reduce((sum, v) => sum + v, 0) / values.length;
+    const firstVal = values[0];
+    const lastVal = values[values.length - 1];
+    const direction = lastVal > firstVal ? "growth" : lastVal < firstVal ? "decline" : "stable trend";
+
+    return `${widget.title} demonstrates a overall ${direction}, averaging ${avgVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}, with values spanning from a low of ${minVal.toLocaleString()} to a peak of ${maxVal.toLocaleString()}.`;
+  } else if (widget.type === "bar") {
+    const values = data.map(d => Number(d.val ?? 0)).filter(v => !isNaN(v));
+    if (values.length === 0) return `${widget.title}: Categories analyzed.`;
+    const maxIdx = values.indexOf(Math.max(...values));
+    const minIdx = values.indexOf(Math.min(...values));
+    const maxCat = data[maxIdx]?.category || "N/A";
+    const minCat = data[minIdx]?.category || "N/A";
+    const maxVal = values[maxIdx];
+
+    return `${widget.title} indicates ${maxCat} is the highest performing category at ${maxVal.toLocaleString()}, while ${minCat} represents the minimum value.`;
+  }
+  return `${widget.title}: Summary analysis ready.`;
+}
+
 export default function Dashboard({
   parsedData,
   datasetLoaded,
@@ -71,7 +100,6 @@ export default function Dashboard({
   dashboardId,
   setDashboardId
 }: DashboardProps) {
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Layout State
@@ -97,7 +125,7 @@ export default function Dashboard({
 
   // Bar Form Fields
   const [barCatCol, setBarCatCol] = useState("");
-  const [barMetricCol, setBarMetricCol] = useState(""); // empty string means Row Count
+  const [barMetricCol, setBarMetricCol] = useState("");
   const [barAgg, setBarAgg] = useState<"SUM" | "COUNT">("SUM");
 
   // Save Dashboard Modal State
@@ -109,13 +137,13 @@ export default function Dashboard({
 
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  // "Explain This Chart" micro-feature states
-  const [activeExplanationWidgetId, setActiveExplanationWidgetId] = useState<string | null>(null);
-  const [explanationLoading, setExplanationLoading] = useState(false);
-  const [explanationError, setExplanationError] = useState<string | null>(null);
+  // 3-ZONE COMMAND CENTER STATES
+  const [focusedWidgetId, setFocusedWidgetId] = useState<string | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const [explanationsCache, setExplanationsCache] = useState<Record<string, string>>({});
+  const [autoExplLoading, setAutoExplLoading] = useState<Record<string, boolean>>({});
 
-  // Caching mechanism
+  // Caching mechanism helper
   const getCacheKey = useCallback((widget: WidgetConfig): string => {
     const data = widgetData[widget.id] || [];
     const serializedData = JSON.stringify(data.slice(0, 10));
@@ -127,75 +155,11 @@ export default function Dashboard({
     return `${widget.id}_${hash}`;
   }, [widgetData]);
 
-  const handleExplainChart = async (widget: WidgetConfig) => {
-    if (activeExplanationWidgetId === widget.id) {
-      setActiveExplanationWidgetId(null);
-      return;
-    }
-
-    const cacheKey = getCacheKey(widget);
-    setActiveExplanationWidgetId(widget.id);
-
-    if (explanationsCache[cacheKey]) {
-      setExplanationError(null);
-      return;
-    }
-
-    setExplanationLoading(true);
-    setExplanationError(null);
-
-    try {
-      const data = widgetData[widget.id] || [];
-      const res = await fetch("/api/explain-chart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: widget.title,
-          type: widget.type,
-          data,
-        }),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json();
-        throw new Error((errJson as { error: string }).error || "Failed to generate explanation.");
-      }
-
-      const resData = (await res.json()) as { explanation: string };
-      setExplanationsCache((prev) => ({
-        ...prev,
-        [cacheKey]: resData.explanation,
-      }));
-    } catch (err: unknown) {
-      console.error("Chart explanation failed:", err);
-      setExplanationError("Couldn't generate an explanation — try again");
-    } finally {
-      setExplanationLoading(false);
-    }
-  };
-
-  // Handle click outside to dismiss explanation popover
-  useEffect(() => {
-    if (!activeExplanationWidgetId) return;
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const activeCard = document.getElementById(`widget-card-${activeExplanationWidgetId}`);
-      if (activeCard && !activeCard.contains(target)) {
-        setActiveExplanationWidgetId(null);
-      }
-    };
-
-    window.addEventListener("click", handleOutsideClick);
-    return () => window.removeEventListener("click", handleOutsideClick);
-  }, [activeExplanationWidgetId]);
-
   // Determine active schema columns
   const dateCols = useMemo(() => parsedData.schema.filter(c => c.currentType === "date"), [parsedData.schema]);
   const numCols = useMemo(() => parsedData.schema.filter(c => c.currentType === "number" || c.currentType === "currency"), [parsedData.schema]);
   const catCols = useMemo(() => parsedData.schema.filter(c => c.currentType === "category"), [parsedData.schema]);
 
-  // Helper to get currency metadata
   const getColCurrencySymbol = useCallback((colName: string): string => {
     const col = parsedData.schema.find(c => c.columnName === colName);
     return col?.currencySymbol || "$";
@@ -204,11 +168,9 @@ export default function Dashboard({
   // Generate complete set of automatic default widgets
   const initializeDashboardWidgets = useCallback(async () => {
     if (!datasetLoaded) return;
-    setLoading(true);
     setError(null);
 
     try {
-      // 1. Determine Date Granularity
       let granularity: "daily" | "monthly" = "daily";
       if (dateCols.length > 0 && numCols.length > 0) {
         const dateCol = dateCols[0];
@@ -224,7 +186,7 @@ export default function Dashboard({
 
       const defaultWidgets: WidgetConfig[] = [];
 
-      // 2. Add Total Rows Card
+      // Total Rows Card
       defaultWidgets.push({
         id: "kpi_total_rows",
         type: "kpi",
@@ -236,7 +198,7 @@ export default function Dashboard({
         }
       });
 
-      // 3. Add Numeric/Currency aggregates KPI Cards
+      // Numeric/Currency aggregates KPI Cards
       numCols.forEach((col) => {
         defaultWidgets.push({
           id: `kpi_${col.columnName}`,
@@ -252,7 +214,7 @@ export default function Dashboard({
         });
       });
 
-      // 4. Add Line Charts (Cap at first 4 numeric columns vs first date column)
+      // Line Charts
       if (dateCols.length > 0 && numCols.length > 0) {
         const dateCol = dateCols[0];
         const lineChartCols = numCols.slice(0, 4);
@@ -284,7 +246,7 @@ export default function Dashboard({
         });
       }
 
-      // 5. Add Bar Charts (Cap at first 4 category columns vs first numeric column or row count)
+      // Bar Charts
       if (catCols.length > 0) {
         const catColsToUse = catCols.slice(0, 4);
         const firstNum = numCols[0];
@@ -363,6 +325,15 @@ export default function Dashboard({
       }
 
       setWidgets(defaultWidgets);
+
+      // Auto focus the first non-KPI chart
+      const firstChart = defaultWidgets.find(w => w.type !== "kpi");
+      if (firstChart) {
+        setFocusedWidgetId(firstChart.id);
+      } else if (defaultWidgets.length > 0) {
+        setFocusedWidgetId(defaultWidgets[0].id);
+      }
+
       setWidgetData({});
       setWidgetErrors({});
       setLoadingWidgets({});
@@ -373,36 +344,14 @@ export default function Dashboard({
     } catch (err: unknown) {
       console.error("Dashboard defaults generation failed:", err);
       setError(err instanceof Error ? err.message : "Failed to load dashboard statistics.");
-    } finally {
-      setLoading(false);
     }
   }, [datasetLoaded, dateCols, numCols, catCols, runQuery, onDashboardLoaded]);
 
-  // Sync widget initialization on initial mount & schema changes
   useEffect(() => {
     if (datasetLoaded) {
       initializeDashboardWidgets();
     }
   }, [datasetLoaded, parsedData.schema, initializeDashboardWidgets]);
-
-  // Command Palette global actions listeners
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const handleExportEvent = () => {
-      handleExportPDF();
-    };
-    const handleSaveEvent = () => {
-      triggerSaveModal();
-    };
-
-    window.addEventListener("insightloop-export-pdf", handleExportEvent);
-    window.addEventListener("insightloop-save-dashboard", handleSaveEvent);
-
-    return () => {
-      window.removeEventListener("insightloop-export-pdf", handleExportEvent);
-      window.removeEventListener("insightloop-save-dashboard", handleSaveEvent);
-    };
-  }, [widgets, parsedData, saveTitle, dashboardId]);
 
   // Execute query for a specific widget
   const fetchWidgetData = useCallback(async (widget: WidgetConfig) => {
@@ -440,7 +389,56 @@ export default function Dashboard({
     });
   }, [widgets, widgetData, loadingWidgets, widgetErrors, fetchWidgetData]);
 
-  // Reordering handler
+  // Always-On AI Annotations Trigger
+  useEffect(() => {
+    if (!focusedWidgetId) return;
+    const widget = widgets.find(w => w.id === focusedWidgetId);
+    if (!widget || widget.type === "kpi") return;
+
+    const data = widgetData[focusedWidgetId];
+    if (!data || data.length === 0) return;
+
+    const cacheKey = getCacheKey(widget);
+    if (explanationsCache[cacheKey]) return; // Already cached
+
+    const fetchCaption = async () => {
+      setAutoExplLoading(prev => ({ ...prev, [focusedWidgetId]: true }));
+      try {
+        const res = await fetch("/api/explain-chart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: widget.title,
+            type: widget.type,
+            data,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error("API failed");
+        }
+
+        const resData = await res.json();
+        setExplanationsCache(prev => ({
+          ...prev,
+          [cacheKey]: resData.explanation,
+        }));
+      } catch (err) {
+        console.warn("API explanation failed, using local heuristic fallback:", err);
+        const fallback = generateLocalHeuristicCaption(widget, data);
+        setExplanationsCache(prev => ({
+          ...prev,
+          [cacheKey]: fallback,
+        }));
+      } finally {
+        setAutoExplLoading(prev => ({ ...prev, [focusedWidgetId]: false }));
+      }
+    };
+
+    fetchCaption();
+  }, [focusedWidgetId, widgetData, widgets, getCacheKey, explanationsCache]);
+
+  // Reordering & deleting
   const moveWidget = (index: number, direction: "up" | "down") => {
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= widgets.length) return;
@@ -454,10 +452,8 @@ export default function Dashboard({
     });
   };
 
-  // Delete handler
   const removeWidget = (id: string) => {
     setWidgets((prev) => prev.filter((w) => w.id !== id));
-    // Clean up cached states
     setWidgetData((prev) => {
       const copy = { ...prev };
       delete copy[id];
@@ -468,9 +464,12 @@ export default function Dashboard({
       delete copy[id];
       return copy;
     });
+    if (focusedWidgetId === id) {
+      setFocusedWidgetId(null);
+    }
   };
 
-  // Pre-populate Form selections cleanly when newType is chosen
+  // Pre-populate Form selections
   useEffect(() => {
     if (newType === "kpi") {
       setKpiCol(numCols.length > 0 ? numCols[0].columnName : "row_count");
@@ -487,7 +486,7 @@ export default function Dashboard({
     }
   }, [newType, dateCols, numCols, catCols]);
 
-  // Add Widget submission handler
+  // Add Custom Widget
   const handleAddWidget = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newType) return;
@@ -626,12 +625,13 @@ export default function Dashboard({
     };
 
     setWidgets((prev) => [...prev, newWidget]);
+    setFocusedWidgetId(id);
     setCustomTitle("");
     setNewType("");
     setShowAddForm(false);
   };
 
-  // Save Dashboard handler
+  // Save Dashboard
   const handleSaveDashboard = async () => {
     setSaving(true);
     setSaveError(null);
@@ -642,7 +642,7 @@ export default function Dashboard({
       const titleToSave = saveTitle.trim() || parsedData.fileName;
 
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        throw new Error("Supabase connection parameters are not fully set in the workspace. Please make sure variables are configured.");
+        throw new Error("Supabase connection parameters are not fully set in the workspace.");
       }
 
       const datasetSummaryPayload = {
@@ -662,9 +662,7 @@ export default function Dashboard({
           .eq("id", dashboardId)
           .select();
 
-        if (supabaseError) {
-          throw new Error(supabaseError.message);
-        }
+        if (supabaseError) throw supabaseError;
         resData = data;
       } else {
         const { data, error: supabaseError } = await supabase
@@ -679,9 +677,7 @@ export default function Dashboard({
           ])
           .select();
 
-        if (supabaseError) {
-          throw new Error(supabaseError.message);
-        }
+        if (supabaseError) throw supabaseError;
         resData = data;
       }
 
@@ -699,7 +695,6 @@ export default function Dashboard({
     }
   };
 
-  // Open Save Modal and pre-fill title
   const triggerSaveModal = () => {
     const cleanFileName = parsedData.fileName.replace(/\.(csv|xlsx|xls)$/i, "");
     setSaveTitle(cleanFileName);
@@ -708,7 +703,7 @@ export default function Dashboard({
     setShowSaveModal(true);
   };
 
-  // High-fidelity PDF export logic
+  // High-fidelity PDF Export
   const handleExportPDF = async () => {
     if (widgets.length === 0) return;
     setExportingPdf(true);
@@ -716,12 +711,11 @@ export default function Dashboard({
       const { default: jsPDF } = await import("jspdf");
       const { default: html2canvas } = await import("html2canvas");
 
-      const element = document.getElementById("dashboard-widgets-container");
+      const element = document.getElementById("pdf-export-hidden-container");
       if (!element) {
-        throw new Error("Widgets container not found.");
+        throw new Error("PDF export container not found.");
       }
 
-      // Safeguard: Add export-safe fallback class to disable glass blurs/shadows/noise/aurora
       element.classList.add("pdf-export-mode");
       document.body.classList.add("pdf-export-mode");
 
@@ -731,12 +725,11 @@ export default function Dashboard({
       try {
         canvas = await html2canvas(element, {
           scale: 2,
-          backgroundColor: isDarkModeActive ? "#1E1C1A" : "#FFFFFF",
+          backgroundColor: isDarkModeActive ? "#0f172a" : "#ffffff",
           useCORS: true,
           logging: false,
         });
       } finally {
-        // Clean up safeguard classes immediately after rendering canvas
         element.classList.remove("pdf-export-mode");
         document.body.classList.remove("pdf-export-mode");
       }
@@ -760,7 +753,7 @@ export default function Dashboard({
       }
 
       const cleanFileName = parsedData.fileName.replace(/\.[^/.]+$/, "");
-      pdf.save(`${cleanFileName}_dashboard.pdf`);
+      pdf.save(`${cleanFileName}_dashboard_report.pdf`);
     } catch (err) {
       console.error("PDF export failed:", err);
       alert("Failed to export PDF. Please try again.");
@@ -769,29 +762,20 @@ export default function Dashboard({
     }
   };
 
-  // Standard loading skeleton
-  if (loading) {
-    return (
-      <div className="space-y-4 animate-pulse">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, idx) => (
-            <div key={idx} className="bg-surface border border-border p-5 rounded-lg space-y-3">
-              <div className="h-4 w-24 bg-surface-subtle rounded"></div>
-              <div className="h-8 w-32 bg-surface-subtle rounded"></div>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[...Array(2)].map((_, idx) => (
-            <div key={idx} className="bg-surface border border-border p-6 rounded-lg space-y-4">
-              <div className="h-5 w-48 bg-surface-subtle rounded"></div>
-              <div className="h-60 w-full bg-surface-subtle/40 rounded"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Handle Command Palette Global Events
+  useEffect(() => {
+    const handleExportEvent = () => handleExportPDF();
+    const handleSaveEvent = () => triggerSaveModal();
+
+    window.addEventListener("insightloop-export-pdf", handleExportEvent);
+    window.addEventListener("insightloop-save-dashboard", handleSaveEvent);
+
+    return () => {
+      window.removeEventListener("insightloop-export-pdf", handleExportEvent);
+      window.removeEventListener("insightloop-save-dashboard", handleSaveEvent);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widgets, parsedData, saveTitle, dashboardId]);
 
   if (error) {
     return (
@@ -805,8 +789,15 @@ export default function Dashboard({
     );
   }
 
+  // Split widgets into KPIs and Charts for the Command Center
+  const kpiWidgets = widgets.filter(w => w.type === "kpi");
+  const chartWidgets = widgets.filter(w => w.type !== "kpi");
+
+  // Determine active focused widget config
+  const activeWidget = widgets.find(w => w.id === focusedWidgetId) || chartWidgets[0] || widgets[0];
+
   return (
-    <div className="space-y-6 animate-fade-in font-sans">
+    <div className="space-y-6 animate-fade-in font-sans relative">
 
       {/* 🛠 Dashboard Toolbar */}
       <div className="bg-surface border border-border p-4 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -869,10 +860,19 @@ export default function Dashboard({
               </>
             )}
           </button>
+
+          {/* Chat toggle button on desktop */}
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 bg-surface hover:bg-surface-subtle text-foreground border border-border rounded-lg text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <MessageSquare className="h-3.5 w-3.5 text-accent" />
+            <span>{isChatOpen ? "Hide Chat" : "Show Chat"}</span>
+          </button>
         </div>
       </div>
 
-      {/* ➕ "Add Custom Widget" Sliding Panel */}
+      {/* ➕ Add Custom Widget Form Panel */}
       {showAddForm && (
         <div className="bg-surface border border-border p-5 rounded-lg space-y-4 animate-fade-in relative">
           <button
@@ -884,10 +884,9 @@ export default function Dashboard({
 
           <div>
             <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Configure Custom Widget</h3>
-            <p className="text-[10px] text-muted mt-1 font-normal">Specify layout configuration and aggregates to construct a new chart or KPI card.</p>
+            <p className="text-[10px] text-muted mt-1 font-normal">Specify layout configuration to build a new chart or KPI card.</p>
           </div>
 
-          {/* Tabs for Widget Type */}
           <div className="grid grid-cols-3 gap-2 border-b border-border pb-3">
             {(["kpi", "line", "bar"] as const).map((t) => (
               <button
@@ -1092,341 +1091,321 @@ export default function Dashboard({
         </div>
       )}
 
-      {/* 🚀 Active Layout Widgets Render Grid */}
-      {widgets.length === 0 ? (
-        <div className="text-center py-12 px-6 bg-surface border border-border rounded-lg space-y-3">
-          <Sparkles className="h-8 w-8 text-muted/30 mx-auto" />
-          <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Your dashboard is empty</h3>
-          <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
-            All widgets were removed. Click &quot;Add Custom Widget&quot; to manually customize your layout or click &quot;Reset to Defaults&quot; to restore automatic configurations.
-          </p>
-        </div>
-      ) : (
-        <div id="dashboard-widgets-container" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
-          {widgets.map((widget, index) => {
-            const isKpi = widget.type === "kpi";
-            const gridColSpan = isKpi
-              ? "col-span-1"
-              : "col-span-1 md:col-span-2 xl:col-span-2";
+      {/* 🚀 3-ZONE COMMAND CENTER WORKSPACE */}
+      <div className="flex flex-col lg:flex-row gap-6 items-stretch w-full">
 
-            const errorMsg = widgetErrors[widget.id];
-            const isWidgetLoading = loadingWidgets[widget.id];
-            const data = widgetData[widget.id];
+        {/* ZONE 1: LEFT RAIL (Narrow, Persistent, Compact KPIs) */}
+        <div className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-180px)] lg:sticky lg:top-24 scrollbar-none border-b lg:border-b-0 lg:border-r border-border pb-6 lg:pb-0 lg:pr-4">
+          <div className="font-mono text-[10px] font-extrabold text-muted uppercase tracking-wider border-b border-border pb-2 mb-1 flex items-center justify-between">
+            <span>KPI Metrics</span>
+            <span className="text-[9px] bg-background border border-border px-1.5 py-0.5 rounded text-muted font-bold">{kpiWidgets.length}</span>
+          </div>
+
+          <div className="flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 shrink-0 select-none">
+            {kpiWidgets.map((widget) => {
+              const isWidgetLoading = loadingWidgets[widget.id];
+              const errorMsg = widgetErrors[widget.id];
+              const data = widgetData[widget.id];
+
+              const isCurrency = widget.metadata.metricType === "currency";
+              const sym = isCurrency ? getColCurrencySymbol(widget.metadata.metricColumn || "") : undefined;
+              const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
+
+              let mainVal = 0;
+              if (data && data[0]) {
+                const row = data[0];
+                if (widget.id === "kpi_total_rows" || !widget.metadata.metricColumn) {
+                  mainVal = Number(row.cnt ?? row.total_rows ?? Object.values(row)[0] ?? 0);
+                } else {
+                  const agg = widget.metadata.aggregation || "SUM";
+                  if (agg === "SUM") mainVal = Number(row.s ?? 0);
+                  else if (agg === "AVG") mainVal = Number(row.a ?? 0);
+                  else if (agg === "MIN") mainVal = Number(row.mn ?? 0);
+                  else if (agg === "MAX") mainVal = Number(row.mx ?? 0);
+                  else if (agg === "COUNT") mainVal = Number(row.cnt ?? 0);
+                }
+              }
+
+              return (
+                <div
+                  key={widget.id}
+                  className="bg-surface border border-border hover:border-text-secondary/60 rounded-xl p-3.5 flex flex-col justify-between min-w-[150px] lg:w-full shrink-0 shadow-xs relative overflow-hidden transition-all"
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5 mb-2">
+                    <span className="text-[10px] font-bold text-foreground truncate block uppercase tracking-wider" title={widget.title}>
+                      {widget.title}
+                    </span>
+                    <button
+                      onClick={() => removeWidget(widget.id)}
+                      className="text-muted hover:text-rose-500 rounded p-0.5 transition"
+                      title="Remove KPI"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {isWidgetLoading ? (
+                    <div className="h-6 w-16 bg-surface-subtle animate-pulse rounded" />
+                  ) : errorMsg ? (
+                    <span className="text-[9px] text-rose-500 font-mono truncate">{errorMsg}</span>
+                  ) : (
+                    <span className="text-lg font-extrabold text-foreground tracking-tight block truncate">
+                      {formatNumber(mainVal, metricType, sym)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ZONE 2: CENTER CANVAS (Focus Mode, filmstrip navigation, always-on AI Annotations, AdvancedInsights) */}
+        <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+
+          {/* Focused Active Chart Card */}
+          {activeWidget && activeWidget.type !== "kpi" ? (() => {
+            const isWidgetLoading = loadingWidgets[activeWidget.id];
+            const errorMsg = widgetErrors[activeWidget.id];
+            const data = widgetData[activeWidget.id];
+
+            const cacheKey = getCacheKey(activeWidget);
+            const activeCaption = explanationsCache[cacheKey];
+            const isCaptionLoading = autoExplLoading[activeWidget.id];
+
+            const index = widgets.findIndex(w => w.id === activeWidget.id);
 
             return (
-              <div
-                key={widget.id}
-                id={`widget-card-${widget.id}`}
-                className={`${gridColSpan} bg-surface border border-border rounded-lg flex flex-col justify-between relative overflow-hidden group hover:border-text-secondary transition-all p-5 h-full`}
-                style={{ minHeight: isKpi ? "150px" : "350px" }}
-              >
-                {/* Header Action Row */}
-                <div className="flex items-start justify-between border-b border-border pb-3 mb-4">
-                  <div className="flex items-center space-x-2 truncate pr-2">
-                    {widget.type === "line" && <TrendingUp className="h-4 w-4 text-accent" />}
-                    {widget.type === "bar" && <BarChart3 className="h-4 w-4 text-accent" />}
-                    {isKpi && (
-                      widget.metadata.metricType === "currency" ? (
-                        <DollarSign className="h-4 w-4 text-accent" />
-                      ) : (
-                        <Hash className="h-4 w-4 text-accent" />
-                      )
+              <div className="bg-surface border border-border rounded-xl p-6 shadow-sm relative flex flex-col justify-between min-h-[460px] animate-fade-in">
+
+                {/* Header with Widget Controls */}
+                <div className="flex items-center justify-between border-b border-border pb-3 mb-4 select-none">
+                  <div className="flex items-center space-x-2">
+                    {activeWidget.type === "line" ? (
+                      <TrendingUp className="h-4.5 w-4.5 text-accent" />
+                    ) : (
+                      <BarChart3 className="h-4.5 w-4.5 text-accent" />
                     )}
-                    <h3
-                      className="font-sans text-xs font-bold text-foreground uppercase tracking-wide truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]"
-                      title={widget.title}
-                    >
-                      {widget.title}
+                    <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider truncate max-w-sm" title={activeWidget.title}>
+                      {activeWidget.title}
                     </h3>
                   </div>
 
-                  <div className="flex items-center">
-                    {/* Explain This Chart Button */}
-                    {!isKpi && !isWidgetLoading && !errorMsg && data && data.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => handleExplainChart(widget)}
-                        className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none mr-2 uppercase tracking-wide ${
-                          activeExplanationWidgetId === widget.id
-                            ? "bg-accent border-accent text-white"
-                            : "bg-surface border-border text-muted hover:text-foreground hover:bg-surface-subtle"
-                        }`}
-                        title="Get instant AI explanation of this chart"
-                      >
-                        <Sparkles className="h-3 w-3 shrink-0 text-amber-500" />
-                        <span className="hidden sm:inline">Explain</span>
-                      </button>
-                    )}
-
-                    {/* Move up / Move down / Delete Action Buttons */}
-                    <div data-html2canvas-ignore="true" className="flex items-center space-x-0.5 flex-shrink-0 bg-background border border-border p-1 rounded-lg">
-                      <button
+                  {/* Move/Delete controls on center canvas */}
+                  <div className="flex items-center space-x-1.5 bg-background border border-border p-1 rounded-lg">
+                    <button
                       type="button"
                       onClick={() => moveWidget(index, "up")}
-                      disabled={index === 0}
-                      title="Move Up"
-                      className="p-1 text-muted hover:text-foreground hover:bg-surface rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                      disabled={index <= 0}
+                      className="p-1 text-muted hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded"
+                      title="Move Left"
                     >
-                      <ChevronUp className="h-3.5 w-3.5" />
+                      <ChevronUp className="h-3.5 w-3.5 rotate-270" />
                     </button>
                     <button
                       type="button"
                       onClick={() => moveWidget(index, "down")}
-                      disabled={index === widgets.length - 1}
-                      title="Move Down"
-                      className="p-1 text-muted hover:text-foreground hover:bg-surface rounded-md disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition"
+                      disabled={index >= widgets.length - 1}
+                      className="p-1 text-muted hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded"
+                      title="Move Right"
                     >
-                      <ChevronDown className="h-3.5 w-3.5" />
+                      <ChevronDown className="h-3.5 w-3.5 rotate-270" />
                     </button>
-                    <div className="w-[1px] h-3.5 bg-border mx-1" />
+                    <div className="w-[1px] h-3.5 bg-border" />
                     <button
                       type="button"
-                      onClick={() => removeWidget(widget.id)}
-                      title="Remove Widget"
-                      className="p-1 text-muted hover:text-rose-500 hover:bg-rose-500/10 rounded-md transition"
+                      onClick={() => removeWidget(activeWidget.id)}
+                      className="p-1 text-muted hover:text-rose-500 rounded"
+                      title="Delete Widget"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
-              </div>
 
-                {/* Main Card Content */}
-                <div className="flex-1 flex flex-col justify-center">
-                  {/* Error State */}
-                  {errorMsg && (
-                    <div className="flex items-start space-x-2 text-rose-500 p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg">
-                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span className="text-[10px] font-semibold leading-relaxed font-mono truncate max-w-[240px]" title={errorMsg}>
-                        {errorMsg}
-                      </span>
+                {/* Chart Visualization canvas */}
+                <div className="flex-1 flex flex-col justify-center min-h-[250px]">
+                  {isWidgetLoading ? (
+                    <div className="flex items-center justify-center space-x-2 py-10">
+                      <RefreshCw className="h-5 w-5 text-accent animate-spin" />
+                      <span className="text-xs text-muted font-bold uppercase tracking-wider">Loading database query...</span>
                     </div>
-                  )}
-
-                  {/* Loading State */}
-                  {isWidgetLoading && (
-                    <div className="flex items-center justify-center space-x-2 py-4">
-                      <RefreshCw className="h-4 w-4 text-accent animate-spin" />
-                      <span className="text-[10px] text-muted font-bold uppercase tracking-wider">Querying DuckDB...</span>
+                  ) : errorMsg ? (
+                    <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-lg text-xs font-mono">
+                      {errorMsg}
                     </div>
-                  )}
+                  ) : !data || data.length === 0 ? (
+                    <span className="text-xs text-muted italic text-center block">No data found</span>
+                  ) : (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeWidget.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="w-full h-[250px]"
+                      >
+                        {activeWidget.type === "line" && (() => {
+                          const isCurrency = activeWidget.metadata.metricType === "currency";
+                          const sym = isCurrency ? getColCurrencySymbol(activeWidget.metadata.metricColumn || "") : undefined;
+                          const colName = activeWidget.metadata.metricColumn || "";
+                          const displayName = parsedData.schema.find(c => c.columnName === colName)?.displayName || colName;
 
-                  {/* No Data State */}
-                  {!isWidgetLoading && !errorMsg && (!data || data.length === 0) && (
-                    <div className="text-center text-muted italic text-[11px] py-4">
-                      No results returned.
-                    </div>
-                  )}
-
-                  {/* Render Widget */}
-                  {!isWidgetLoading && !errorMsg && data && data.length > 0 && (
-                    <>
-                      {/* 1. Render KPI Card */}
-                      {isKpi && (() => {
-                        const isCurrency = widget.metadata.metricType === "currency";
-                        const sym = isCurrency ? getColCurrencySymbol(widget.metadata.metricColumn || "") : undefined;
-                        const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
-
-                        const row = data[0];
-                        let mainVal = 0;
-
-                        if (widget.id === "kpi_total_rows" || !widget.metadata.metricColumn) {
-                          mainVal = Number(row.cnt ?? row.total_rows ?? Object.values(row)[0] ?? 0);
-                        } else {
-                          const agg = widget.metadata.aggregation || "SUM";
-                          if (agg === "SUM") mainVal = Number(row.s ?? 0);
-                          else if (agg === "AVG") mainVal = Number(row.a ?? 0);
-                          else if (agg === "MIN") mainVal = Number(row.mn ?? 0);
-                          else if (agg === "MAX") mainVal = Number(row.mx ?? 0);
-                          else if (agg === "COUNT") mainVal = Number(row.cnt ?? 0);
-                        }
-
-                        const hasSubMetrics = row.s !== undefined;
-
-                        return (
-                          <div className="flex flex-col justify-between h-full">
-                            <div>
-                              <span className="text-3xl font-extrabold text-foreground block tracking-tight truncate">
-                                {formatNumber(mainVal, metricType, sym)}
-                              </span>
-                            </div>
-
-                            {/* Sub-aggregates details */}
-                            {hasSubMetrics && widget.id !== "kpi_total_rows" && (
-                              <div className="grid grid-cols-3 gap-1.5 text-[9px] text-muted font-medium mt-4 pt-2.5 border-t border-border">
-                                <div>
-                                  <span className="text-muted/60 block uppercase tracking-wide text-[8px]">Average</span>
-                                  <span className="truncate block mt-0.5 text-foreground" title={formatNumber(row.a as number, metricType, sym)}>
-                                    {formatNumber(row.a as number, metricType, sym)}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-muted/60 block uppercase tracking-wide text-[8px]">Minimum</span>
-                                  <span className="truncate block mt-0.5 text-foreground" title={formatNumber(row.mn as number, metricType, sym)}>
-                                    {formatNumber(row.mn as number, metricType, sym)}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-muted/60 block uppercase tracking-wide text-[8px]">Maximum</span>
-                                  <span className="truncate block mt-0.5 text-foreground" title={formatNumber((row.max ?? row.mx) as number, metricType, sym)}>
-                                    {formatNumber((row.max ?? row.mx) as number, metricType, sym)}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            {!hasSubMetrics && (
-                              <div className="text-[10px] text-muted mt-3 pt-2.5 border-t border-border">
-                                Aggregation Method: {widget.metadata.aggregation || "COUNT"}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* 2. Render Line Chart */}
-                      {widget.type === "line" && (() => {
-                        const isCurrency = widget.metadata.metricType === "currency";
-                        const sym = isCurrency ? getColCurrencySymbol(widget.metadata.metricColumn || "") : undefined;
-                        const colName = widget.metadata.metricColumn || "";
-                        const displayName = parsedData.schema.find(c => c.columnName === colName)?.displayName || colName;
-
-                        return (
-                          <div className="h-60 w-full text-[10px] mt-2 select-none">
+                          return (
                             <ResponsiveContainer width="100%" height="100%">
                               <LineChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                                <XAxis
-                                  dataKey="date_bucket"
-                                  stroke="var(--text-secondary)"
-                                  tickLine={false}
-                                  axisLine={false}
-                                  dy={8}
-                                />
-                                <YAxis
-                                  stroke="var(--text-secondary)"
-                                  tickLine={false}
-                                  axisLine={false}
-                                  width={80}
-                                  tickFormatter={(v) => formatNumber(v, isCurrency ? "currency" : "number", sym)}
-                                />
+                                <XAxis dataKey="date_bucket" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+                                <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={80} tickFormatter={(v) => formatNumber(v, isCurrency ? "currency" : "number", sym)} />
                                 <Tooltip
                                   contentStyle={{ backgroundColor: "var(--surface)", borderColor: "var(--border)", borderRadius: "6px" }}
                                   itemStyle={{ color: "var(--text-primary)" }}
                                   labelStyle={{ color: "var(--text-secondary)", fontWeight: "500" }}
-                                  formatter={(value) => [formatNumber(value as number, isCurrency ? "currency" : "number", sym), displayName]}
                                 />
-                                <Legend verticalAlign="top" height={36} iconType="circle" />
-                                <Line
-                                  type="monotone"
-                                  dataKey="total_val"
-                                  name={displayName}
-                                  stroke="var(--accent)"
-                                  strokeWidth={2}
-                                  activeDot={{ r: 5 }}
-                                  dot={{ r: 2, strokeWidth: 1.5 }}
-                                />
+                                <Line type="monotone" dataKey="total_val" name={displayName} stroke="var(--accent)" strokeWidth={2} dot={{ r: 2 }} />
                               </LineChart>
                             </ResponsiveContainer>
-                          </div>
-                        );
-                      })()}
+                          );
+                        })()}
 
-                      {/* 3. Render Bar Chart */}
-                      {widget.type === "bar" && (() => {
-                        const colName = widget.metadata.metricColumn || "";
-                        const metricName = widget.metadata.metricColumn
-                          ? (parsedData.schema.find(c => c.columnName === colName)?.displayName || colName)
-                          : "Count";
-                        const isCurrency = widget.metadata.metricType === "currency";
-                        const sym = isCurrency ? getColCurrencySymbol(colName) : undefined;
-                        const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
+                        {activeWidget.type === "bar" && (() => {
+                          const colName = activeWidget.metadata.metricColumn || "";
+                          const metricName = activeWidget.metadata.metricColumn
+                            ? (parsedData.schema.find(c => c.columnName === colName)?.displayName || colName)
+                            : "Count";
+                          const isCurrency = activeWidget.metadata.metricType === "currency";
+                          const sym = isCurrency ? getColCurrencySymbol(colName) : undefined;
+                          const metricType = (activeWidget.metadata.metricType as "number" | "currency") || "number";
 
-                        return (
-                          <div className="h-60 w-full text-[10px] mt-2 select-none">
+                          return (
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={data} margin={{ top: 10, right: 10, left: 15, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                                <XAxis
-                                  dataKey="category"
-                                  stroke="var(--text-secondary)"
-                                  tickLine={false}
-                                  axisLine={false}
-                                  dy={8}
-                                  tickFormatter={(v) => (String(v).length > 12 ? `${String(v).slice(0, 10)}...` : String(v))}
-                                />
-                                <YAxis
-                                  stroke="var(--text-secondary)"
-                                  tickLine={false}
-                                  axisLine={false}
-                                  width={80}
-                                  tickFormatter={(v) => formatNumber(v, metricType, sym)}
-                                />
+                                <XAxis dataKey="category" stroke="var(--text-secondary)" tickLine={false} axisLine={false} tickFormatter={(v) => (String(v).length > 12 ? `${String(v).slice(0, 10)}...` : String(v))} />
+                                <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={80} tickFormatter={(v) => formatNumber(v, metricType, sym)} />
                                 <Tooltip
                                   contentStyle={{ backgroundColor: "var(--surface)", borderColor: "var(--border)", borderRadius: "6px" }}
                                   itemStyle={{ color: "var(--text-primary)" }}
                                   labelStyle={{ color: "var(--text-secondary)", fontWeight: "500" }}
-                                  formatter={(value) => [formatNumber(value as number, metricType, sym), metricName]}
                                 />
-                                <Legend verticalAlign="top" height={36} iconType="circle" />
-                                <Bar
-                                  dataKey="val"
-                                  name={metricName}
-                                  fill="var(--accent)"
-                                  radius={[2, 2, 0, 0]}
-                                />
+                                <Bar dataKey="val" name={metricName} fill="var(--accent)" radius={[2, 2, 0, 0]} />
                               </BarChart>
                             </ResponsiveContainer>
-                          </div>
-                        );
-                      })()}
-                    </>
+                          );
+                        })()}
+                      </motion.div>
+                    </AnimatePresence>
                   )}
                 </div>
 
-                {/* Popover/Tooltip Overlay for Chart Explanations */}
-                {activeExplanationWidgetId === widget.id && (
-                  <div className="absolute top-[52px] left-4 right-4 bg-surface border border-border rounded-lg shadow-xl z-30 p-4 animate-fade-in font-sans">
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between border-b border-border pb-1.5">
-                        <div className="flex items-center space-x-1.5 text-accent font-bold text-[9px] uppercase tracking-wide">
-                          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                          <span>AI Chart Explanation</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveExplanationWidgetId(null)}
-                          className="text-muted hover:text-foreground transition p-0.5 rounded focus-visible:ring-2 focus-visible:ring-accent"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-
-                      {explanationLoading ? (
-                        <div className="flex items-center space-x-2 py-4 text-xs text-muted">
-                          <RefreshCw className="h-3.5 w-3.5 text-accent animate-spin" />
-                          <span>Thinking...</span>
-                        </div>
-                      ) : explanationError ? (
-                        <div className="flex items-start space-x-2 text-rose-500 text-[11px] py-2 leading-normal">
-                          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                          <span>{explanationError}</span>
-                        </div>
-                      ) : (
-                        <p className="text-[11px] text-foreground leading-relaxed font-normal">
-                          {explanationsCache[getCacheKey(widget)]}
-                        </p>
-                      )}
+                {/* Always-on AI chart annotation caption directly beneath */}
+                <div className="mt-6 pt-4 border-t border-border select-text">
+                  <span className="text-[9px] font-mono text-accent uppercase font-extrabold tracking-widest block mb-2">AI CHART CAPTION</span>
+                  {isCaptionLoading ? (
+                    <div className="space-y-1.5 animate-pulse">
+                      <div className="h-3 bg-surface-subtle rounded w-3/4"></div>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-foreground leading-relaxed font-normal">
+                      {activeCaption || "Calculating stats interpretation..."}
+                    </p>
+                  )}
+                </div>
+
               </div>
             );
-          })}
-        </div>
-      )}
+          })() : (
+            <div className="bg-surface border border-border rounded-xl p-8 text-center text-muted italic text-xs h-[300px] flex items-center justify-center">
+              Please configure custom charts using the &quot;Add Custom Widget&quot; dialog above.
+            </div>
+          )}
 
-      {/* 💾 Save Dashboard Modal Dialog */}
+          {/* FILMSTRIP NAVIGATION (Horizontal row of small thumbnail-style previews below focused chart) */}
+          <div className="space-y-2 select-none">
+            <span className="text-[10px] font-mono text-muted uppercase font-bold tracking-wider block">Chart Filmstrip Navigation</span>
+            <div className="flex items-stretch gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              {chartWidgets.map((widget) => (
+                <button
+                  key={widget.id}
+                  onClick={() => setFocusedWidgetId(widget.id)}
+                  className={`p-3 rounded-xl border text-left shrink-0 w-44 flex flex-col justify-between gap-1 transition-all focus-visible:ring-2 focus-visible:ring-accent ${
+                    focusedWidgetId === widget.id
+                      ? "bg-accent/5 border-accent shadow-xs"
+                      : "bg-surface border-border hover:border-text-secondary/60"
+                  }`}
+                >
+                  <span className="text-[10px] font-bold text-foreground truncate block w-full" title={widget.title}>
+                    {widget.title}
+                  </span>
+                  <div className="flex items-center space-x-1.5 text-[8px] font-bold text-muted uppercase tracking-wider">
+                    {widget.type === "line" ? (
+                      <>
+                        <TrendingUp className="h-3 w-3 text-accent" />
+                        <span>Line Chart</span>
+                      </>
+                    ) : (
+                      <>
+                        <BarChart3 className="h-3 w-3 text-accent" />
+                        <span>Bar Chart</span>
+                      </>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {chartWidgets.length === 0 && (
+                <span className="text-[10px] text-muted italic p-2">No active charts on filmstrip</span>
+              )}
+            </div>
+          </div>
+
+          {/* Expandable AdvancedInsights inside the Center Canvas */}
+          <div className="mt-2">
+            <AdvancedInsights
+              parsedData={parsedData}
+              datasetLoaded={datasetLoaded}
+              runQuery={runQuery}
+            />
+          </div>
+
+          {/* Mobile Collapsible AI Chat bottom drawer */}
+          <div className="block lg:hidden mt-4">
+            <div className="font-mono text-[10px] font-extrabold text-muted uppercase tracking-wider border-b border-border pb-2 mb-3">
+              Conversational Co-Pilot (Mobile Sheet)
+            </div>
+            <ChatPanel
+              datasetLoaded={datasetLoaded}
+              schema={parsedData.schema}
+              runQuery={runQuery}
+              dashboardId={dashboardId}
+            />
+          </div>
+
+        </div>
+
+        {/* ZONE 3: RIGHT PANEL (Persistent AI Chat, Defaults Open, Collapsible on Desktop) */}
+        {isChatOpen && (
+          <div className="hidden lg:flex w-96 shrink-0 flex-col sticky top-24 max-h-[calc(100vh-180px)] overflow-y-auto scrollbar-none border-l border-border pl-4">
+            <div className="font-mono text-[10px] font-extrabold text-muted uppercase tracking-wider border-b border-border pb-2 mb-3 flex items-center justify-between">
+              <span>Conversational Assistant</span>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="text-xs text-muted hover:text-foreground font-bold"
+              >
+                Hide
+              </button>
+            </div>
+            <ChatPanel
+              datasetLoaded={datasetLoaded}
+              schema={parsedData.schema}
+              runQuery={runQuery}
+              dashboardId={dashboardId}
+            />
+          </div>
+        )}
+
+      </div>
+
+      {/* 💾 Save Dashboard Modal */}
       {showSaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in">
           <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-md relative space-y-4 shadow-lg">
@@ -1438,7 +1417,6 @@ export default function Dashboard({
               <X className="h-4 w-4" />
             </button>
 
-            {/* Success Screen */}
             {saveSuccessId ? (
               <div className="text-center py-2 space-y-3">
                 <div className="h-10 w-10 bg-success/10 border border-success/20 text-success rounded-full flex items-center justify-center mx-auto">
@@ -1447,7 +1425,7 @@ export default function Dashboard({
                 <div className="space-y-1">
                   <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Dashboard Saved!</h3>
                   <p className="text-xs text-muted leading-relaxed">
-                    Your layout and column definitions have been persisted under session ID cookie.
+                    Your layout and column definitions have been persisted under your session.
                   </p>
                 </div>
 
@@ -1466,14 +1444,13 @@ export default function Dashboard({
                 </div>
               </div>
             ) : (
-              /* Name Form Screen */
-              <div className="space-y-4 font-sans">
+              <div className="space-y-4 font-sans text-xs font-normal">
                 <div>
                   <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider">Save Dashboard</h3>
-                  <p className="text-xs text-muted mt-1 font-normal">Provide a name to revisit your customized layout and schema later.</p>
+                  <p className="text-xs text-muted mt-1">Provide a name to revisit your customized layout and schema later.</p>
                 </div>
 
-                <div className="flex flex-col space-y-1.5 text-xs">
+                <div className="flex flex-col space-y-1.5">
                   <label className="text-[9px] font-bold uppercase tracking-wider text-muted font-sans">Dashboard Title</label>
                   <input
                     type="text"
@@ -1481,7 +1458,7 @@ export default function Dashboard({
                     onChange={(e) => setSaveTitle(e.target.value)}
                     placeholder="Enter dashboard name"
                     disabled={saving}
-                    className="bg-background border border-border rounded-lg p-2.5 text-foreground outline-none focus:border-accent text-xs placeholder-muted/30 focus-visible:ring-2 focus-visible:ring-accent/20"
+                    className="bg-background border border-border rounded-lg p-2.5 text-foreground outline-none focus:border-accent placeholder-muted/30 focus-visible:ring-2 focus-visible:ring-accent/20"
                     maxLength={100}
                   />
                 </div>
@@ -1526,6 +1503,105 @@ export default function Dashboard({
           </div>
         </div>
       )}
+
+      {/* 📄 HIDDEN FULL-GRID CONTAINER FOR HIGH-FIDELITY COMPLETE PDF EXPORTS */}
+      <div className="absolute left-[-9999px] top-[-9999px] w-[1000px] flex flex-col gap-6 p-8 bg-slate-900 text-slate-100 rounded-xl" id="pdf-export-hidden-container">
+        <div className="border-b border-slate-800 pb-4 mb-2 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-slate-50">{parsedData.fileName} - Dashboard Report</h1>
+            <p className="text-xs text-slate-400">InsightLoop AI Analytical Executive PDF Summary</p>
+          </div>
+          <span className="text-xs font-mono text-accent">ID: {dashboardId || "local_sandbox"}</span>
+        </div>
+
+        {/* KPIs in the hidden PDF layout */}
+        <div className="grid grid-cols-4 gap-4">
+          {kpiWidgets.map(widget => {
+            const data = widgetData[widget.id];
+            const isCurrency = widget.metadata.metricType === "currency";
+            const sym = isCurrency ? getColCurrencySymbol(widget.metadata.metricColumn || "") : undefined;
+            const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
+
+            let val = 0;
+            if (data && data[0]) {
+              const row = data[0];
+              if (widget.id === "kpi_total_rows" || !widget.metadata.metricColumn) {
+                val = Number(row.cnt ?? row.total_rows ?? Object.values(row)[0] ?? 0);
+              } else {
+                const agg = widget.metadata.aggregation || "SUM";
+                if (agg === "SUM") val = Number(row.s ?? 0);
+                else if (agg === "AVG") val = Number(row.a ?? 0);
+                else if (agg === "MIN") val = Number(row.mn ?? 0);
+                else if (agg === "MAX") val = Number(row.mx ?? 0);
+                else if (agg === "COUNT") val = Number(row.cnt ?? 0);
+              }
+            }
+
+            return (
+              <div key={widget.id} className="border border-slate-800 rounded-xl p-4 bg-slate-950 flex flex-col justify-between">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate mb-1">{widget.title}</span>
+                <span className="text-lg font-bold text-slate-50">{formatNumber(val, metricType, sym)}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Charts stacked/gridded inside hidden PDF container */}
+        <div className="grid grid-cols-2 gap-6 mt-4">
+          {chartWidgets.map(widget => {
+            const data = widgetData[widget.id];
+            if (!data || data.length === 0) return null;
+
+            return (
+              <div key={widget.id} className="border border-slate-800 rounded-xl p-5 bg-slate-950 flex flex-col justify-between min-h-[350px]">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-4 pb-2 border-b border-slate-800">{widget.title}</h3>
+
+                <div className="h-52 w-full text-[9px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {widget.type === "line" ? (() => {
+                      const isCurrency = widget.metadata.metricType === "currency";
+                      const sym = isCurrency ? getColCurrencySymbol(widget.metadata.metricColumn || "") : undefined;
+                      const colName = widget.metadata.metricColumn || "";
+                      const displayName = parsedData.schema.find(c => c.columnName === colName)?.displayName || colName;
+
+                      return (
+                        <LineChart data={data}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                          <XAxis dataKey="date_bucket" stroke="#94a3b8" />
+                          <YAxis stroke="#94a3b8" width={60} tickFormatter={(v) => formatNumber(v, isCurrency ? "currency" : "number", sym)} />
+                          <Line type="monotone" dataKey="total_val" name={displayName} stroke="#3b82f6" strokeWidth={2} dot={false} />
+                        </LineChart>
+                      );
+                    })() : (() => {
+                      const colName = widget.metadata.metricColumn || "";
+                      const metricName = widget.metadata.metricColumn
+                        ? (parsedData.schema.find(c => c.columnName === colName)?.displayName || colName)
+                        : "Count";
+                      const isCurrency = widget.metadata.metricType === "currency";
+                      const sym = isCurrency ? getColCurrencySymbol(colName) : undefined;
+                      const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
+
+                      return (
+                        <BarChart data={data}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                          <XAxis dataKey="category" stroke="#94a3b8" tickFormatter={(v) => (String(v).length > 10 ? `${String(v).slice(0, 8)}...` : String(v))} />
+                          <YAxis stroke="#94a3b8" width={60} tickFormatter={(v) => formatNumber(v, metricType, sym)} />
+                          <Bar dataKey="val" name={metricName} fill="#3b82f6" />
+                        </BarChart>
+                      );
+                    })()}
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-slate-800 text-[10px] text-slate-400 leading-relaxed font-normal">
+                  <span className="font-bold text-slate-300 block mb-1">AI INSIGHT INSIGHTS</span>
+                  {explanationsCache[getCacheKey(widget)] || generateLocalHeuristicCaption(widget, data)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
     </div>
   );
