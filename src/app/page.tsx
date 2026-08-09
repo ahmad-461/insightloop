@@ -1319,7 +1319,7 @@ function HomeContent() {
               <div className="absolute top-0 left-0 w-full h-1 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-500" />
 
               <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none z-0 overflow-hidden">
-                <span className="text-accent/5 dark:text-accent-[0.03] font-bold text-[32px] max-w-md uppercase tracking-wide text-center px-4 leading-normal font-sans">
+                <span className="text-accent opacity-[0.05] dark:opacity-[0.06] font-bold text-xl sm:text-3xl max-w-md uppercase tracking-wide text-center px-4 leading-tight font-sans">
                   No cost. No lock-in. Your data never leaves your browser.
                 </span>
               </div>
