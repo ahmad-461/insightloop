@@ -142,6 +142,7 @@ export default function Footer() {
               onClick={scrollToTop}
               className="p-1.5 text-muted hover:text-foreground hover:bg-surface border border-transparent hover:border-border rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none flex items-center justify-center self-center"
               title="Back to Top"
+              aria-label="Scroll back to top of the page"
             >
               <ArrowUp className="h-3.5 w-3.5 mr-1" />
               <span className="text-[10px] font-bold uppercase tracking-wider">Back to Top</span>

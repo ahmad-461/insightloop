@@ -200,8 +200,8 @@ export default function Header() {
 
             {/* Pricing / Open link */}
             <Link
-              href="/#pricing"
-              onClick={(e) => handleNavClick(e, "pricing")}
+              href="/#commitments"
+              onClick={(e) => handleNavClick(e, "commitments")}
               className="relative py-1.5 px-3.5 text-muted hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded-md group"
             >
               <span>Free & Open</span>
@@ -347,8 +347,8 @@ export default function Header() {
                 </Link>
 
                 <Link
-                  href="/#pricing"
-                  onClick={(e) => handleNavClick(e, "pricing")}
+                  href="/#commitments"
+                  onClick={(e) => handleNavClick(e, "commitments")}
                   className="flex items-center justify-between p-2.5 rounded-lg text-muted hover:text-foreground transition border border-transparent hover:bg-surface-subtle/40"
                 >
                   <span>Free & Open</span>

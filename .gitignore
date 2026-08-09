@@ -42,3 +42,7 @@ __pycache__/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local logs and verification directories
+next_dev.log
+verification/

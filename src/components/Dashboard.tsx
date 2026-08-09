@@ -28,10 +28,13 @@ import {
   CartesianGrid,
   Tooltip
 } from "recharts";
-import { ParsedResult, ColumnType } from "@/utils/parser";
+import { ParsedResult, ColumnType, parseCSV, parseExcel } from "@/utils/parser";
 import { formatNumber } from "@/utils/formatter";
 import { getOrCreateSessionId } from "@/utils/session";
 import { supabase } from "@/utils/supabaseClient";
+import { loadSecondDatasetIntoDuckDB } from "@/utils/duckdbLoader";
+import { useDuckDB } from "@/context/DuckDBContext";
+import { Link2, Minimize } from "lucide-react";
 import ChatPanel from "./ChatPanel";
 import AdvancedInsights from "./AdvancedInsights";
 import { AnimatePresence, motion } from "framer-motion";
@@ -62,6 +65,10 @@ interface DashboardProps {
   onDashboardLoaded?: () => void;
   dashboardId: string | null;
   setDashboardId: (id: string | null) => void;
+  originalParsedData?: ParsedResult | null;
+  onOriginalParsedDataChange?: (newOriginal: ParsedResult | null) => void;
+  onParsedDataChange?: (newParsedData: ParsedResult | null) => void;
+  isPlayground?: boolean;
 }
 
 function generateLocalHeuristicCaption(widget: WidgetConfig, data: Record<string, unknown>[]): string {
@@ -98,9 +105,272 @@ export default function Dashboard({
   runQuery,
   onDashboardLoaded,
   dashboardId,
-  setDashboardId
+  setDashboardId,
+  originalParsedData,
+  onOriginalParsedDataChange,
+  onParsedDataChange,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  isPlayground = false
 }: DashboardProps) {
   const [error, setError] = useState<string | null>(null);
+
+  // Multi-File Join States
+  const { joinDatasets, db } = useDuckDB();
+  const secondFileRef = React.useRef<HTMLInputElement>(null);
+  const [secondParsed, setSecondParsed] = useState<ParsedResult | null>(null);
+  const [leftJoinCol, setLeftJoinCol] = useState("");
+  const [rightJoinCol, setRightJoinCol] = useState("");
+  const [joinType, setJoinType] = useState<"INNER" | "LEFT">("INNER");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joinCount, setJoinCount] = useState<number | null>(null);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [countWarning, setCountWarning] = useState<string | null>(null);
+
+  // Trigger file selection for second dataset
+  const handleSecondFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setJoinError(null);
+    setCountWarning(null);
+    setJoinCount(null);
+
+    try {
+      const name = file.name.toLowerCase();
+      const isCsv = name.endsWith(".csv");
+      const isXls = name.endsWith(".xls") || name.endsWith(".xlsx");
+
+      if (!isCsv && !isXls) {
+        throw new Error("Unsupported file format. Please upload a CSV (.csv) or Excel (.xlsx, .xls) file.");
+      }
+
+      let parsed: ParsedResult;
+      if (isCsv) {
+        parsed = await parseCSV(file);
+      } else {
+        parsed = await parseExcel(file);
+      }
+
+      // 1. Auto-suggest join columns
+      let bestLeft = "";
+      let bestRight = "";
+      let maxOverlap = 0;
+
+      for (const col1 of parsedData.schema) {
+        for (const col2 of parsed.schema) {
+          const namesMatch = col1.sqlSafeName.toLowerCase() === col2.sqlSafeName.toLowerCase() ||
+                             col1.columnName.toLowerCase() === col2.columnName.toLowerCase();
+
+          // scan overlap in first 500 rows
+          const vals1 = new Set(parsedData.rawRows.slice(0, 500).map(r => String(r[col1.columnName] ?? "").trim()).filter(Boolean));
+          const vals2 = new Set(parsed.rawRows.slice(0, 500).map(r => String(r[col2.columnName] ?? "").trim()).filter(Boolean));
+
+          let overlap = 0;
+          vals1.forEach(v => {
+            if (vals2.has(v)) overlap++;
+          });
+
+          if (namesMatch && overlap > 0) {
+            const score = overlap + 1000;
+            if (score > maxOverlap) {
+              maxOverlap = score;
+              bestLeft = col1.columnName;
+              bestRight = col2.columnName;
+            }
+          } else if (overlap > 0) {
+            if (overlap > maxOverlap) {
+              maxOverlap = overlap;
+              bestLeft = col1.columnName;
+              bestRight = col2.columnName;
+            }
+          }
+        }
+      }
+
+      if (!bestLeft && parsedData.schema.length > 0 && parsed.schema.length > 0) {
+        bestLeft = parsedData.schema[0].columnName;
+        bestRight = parsed.schema[0].columnName;
+      }
+
+      setSecondParsed(parsed);
+      setLeftJoinCol(bestLeft);
+      setRightJoinCol(bestRight);
+      setJoinType("INNER");
+      setShowJoinModal(true);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to parse second file.");
+    } finally {
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  const handleExecuteJoin = async () => {
+    if (!secondParsed || !onParsedDataChange || !joinDatasets) return;
+    setJoining(true);
+    setJoinError(null);
+
+    try {
+      // Preserve backup if not already preserved
+      if (!originalParsedData && onOriginalParsedDataChange) {
+        onOriginalParsedDataChange(parsedData);
+      }
+
+      const res = await joinDatasets(parsedData, secondParsed, leftJoinCol, rightJoinCol, joinType);
+      if (res.success && res.result) {
+        onParsedDataChange(res.result);
+        setShowJoinModal(false);
+        setSecondParsed(null);
+      } else {
+        setJoinError(res.error || "Join execution failed.");
+      }
+    } catch (err: unknown) {
+      setJoinError(err instanceof Error ? err.message : "An unexpected error occurred during join.");
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const handleRemoveJoin = () => {
+    if (originalParsedData && onParsedDataChange && onOriginalParsedDataChange) {
+      onParsedDataChange(originalParsedData);
+      onOriginalParsedDataChange(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!showJoinModal || !secondParsed || !db) return;
+
+    let active = true;
+    const checkJoinCount = async () => {
+      try {
+        const loadRes = await loadSecondDatasetIntoDuckDB(db, secondParsed);
+        if (!loadRes.success || !active) return;
+
+        // Run matching rows count query
+        const colLeft = parsedData.schema.find(c => c.columnName === leftJoinCol);
+        const colRight = secondParsed.schema.find(c => c.columnName === rightJoinCol);
+
+        if (!colLeft || !colRight) return;
+
+        const countSql = `
+          SELECT COUNT(*) as cnt
+          FROM dataset
+          ${joinType} JOIN dataset_2 ON dataset."${colLeft.sqlSafeName}" = dataset_2."${colRight.sqlSafeName}"
+        `;
+
+        const res = await runQuery(countSql);
+        if ("error" in res) {
+          console.warn("Match count check failed:", res.error);
+          return;
+        }
+
+        if (res && res[0] && active) {
+          const count = Number(res[0].cnt ?? 0);
+          setJoinCount(count);
+          if (count === 0) {
+            setCountWarning(`This join produces 0 matching records. An INNER JOIN will result in an empty dashboard. Consider trying a LEFT JOIN or selecting different columns.`);
+          } else if (count > 100000) {
+            setCountWarning(`Warning: This join matches ${count.toLocaleString()} rows, which is extremely large and may cause performance or memory lag in the browser.`);
+          } else {
+            setCountWarning(null);
+          }
+        }
+      } catch (err) {
+        console.warn("Error running matches check:", err);
+      }
+    };
+
+    checkJoinCount();
+
+    return () => {
+      active = false;
+    };
+  }, [showJoinModal, secondParsed, leftJoinCol, rightJoinCol, joinType, db, parsedData, runQuery]);
+
+  // Presenter Mode States
+  const [isPresenterMode, setIsPresenterMode] = useState(false);
+  const [isControlBarVisible, setIsControlBarVisible] = useState(true);
+
+  const enterPresenter = async () => {
+    setIsPresenterMode(true);
+    setIsControlBarVisible(true);
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (err) {
+      console.warn("Fullscreen API not allowed or supported, falling back to overlay:", err);
+    }
+  };
+
+  const exitPresenter = async () => {
+    setIsPresenterMode(false);
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.warn("Exit fullscreen failed:", err);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsPresenterMode(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        exitPresenter();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Timer for hiding minimal control bar
+  useEffect(() => {
+    if (!isPresenterMode) return;
+    let timer: NodeJS.Timeout;
+
+    const handleMouseMove = () => {
+      setIsControlBarVisible(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setIsControlBarVisible(false);
+      }, 2500);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    timer = setTimeout(() => {
+      setIsControlBarVisible(false);
+    }, 2500);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      clearTimeout(timer);
+    };
+  }, [isPresenterMode]);
+
+  // Command palette events
+  useEffect(() => {
+    const handleEnterPresenter = () => enterPresenter();
+    const handleExitPresenter = () => exitPresenter();
+
+    window.addEventListener("insightloop-enter-presenter", handleEnterPresenter);
+    window.addEventListener("insightloop-exit-presenter", handleExitPresenter);
+
+    return () => {
+      window.removeEventListener("insightloop-enter-presenter", handleEnterPresenter);
+      window.removeEventListener("insightloop-exit-presenter", handleExitPresenter);
+    };
+  }, []);
 
   // Layout State
   const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
@@ -796,6 +1066,146 @@ export default function Dashboard({
   // Determine active focused widget config
   const activeWidget = widgets.find(w => w.id === focusedWidgetId) || chartWidgets[0] || widgets[0];
 
+  if (isPresenterMode) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-background overflow-y-auto p-6 md:p-12 select-none font-sans scrollbar-thin">
+        {/* Floating Auto-Hiding Control Bar */}
+        <AnimatePresence>
+          {isControlBarVisible && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, x: "-50%" }}
+              exit={{ opacity: 0, y: -20, x: "-50%" }}
+              transition={{ duration: 0.2 }}
+              className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-surface/95 backdrop-blur-md border border-border px-4 py-2.5 rounded-full flex items-center space-x-3 shadow-2xl"
+            >
+              <span className="text-xs font-bold text-foreground tracking-wide select-none">Presenter Mode</span>
+              <div className="w-[1px] h-4 bg-border" />
+              <button
+                onClick={exitPresenter}
+                className="flex items-center space-x-1 px-3 py-1 bg-accent text-white rounded-full text-xs font-bold hover:opacity-90 transition-all"
+                aria-label="Exit Presenter Mode"
+              >
+                <Minimize className="h-3.5 w-3.5" />
+                <span>Exit (ESC)</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Dashboard Content */}
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="border-b border-border pb-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">{parsedData.fileName}</h1>
+              <p className="text-xs text-muted mt-1">Live Presenter Dashboard View</p>
+            </div>
+            <span className="text-xs font-mono text-accent bg-accent/10 px-2.5 py-1 rounded-full border border-accent/20">
+              Interactive Presenter
+            </span>
+          </div>
+
+          {/* KPIs Grid */}
+          {kpiWidgets.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {kpiWidgets.map((widget) => {
+                const data = widgetData[widget.id];
+                const isCurrency = widget.metadata.metricType === "currency";
+                const sym = isCurrency ? getColCurrencySymbol(widget.metadata.metricColumn || "") : undefined;
+                const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
+
+                let val = 0;
+                if (data && data[0]) {
+                  const row = data[0];
+                  if (widget.id === "kpi_total_rows" || !widget.metadata.metricColumn) {
+                    val = Number(row.cnt ?? row.total_rows ?? Object.values(row)[0] ?? 0);
+                  } else {
+                    const agg = widget.metadata.aggregation || "SUM";
+                    if (agg === "SUM") val = Number(row.s ?? 0);
+                    else if (agg === "AVG") val = Number(row.a ?? 0);
+                    else if (agg === "MIN") val = Number(row.mn ?? 0);
+                    else if (agg === "MAX") val = Number(row.mx ?? 0);
+                    else if (agg === "COUNT") val = Number(row.cnt ?? 0);
+                  }
+                }
+
+                return (
+                  <div key={widget.id} className="bg-surface border border-border rounded-xl p-4 flex flex-col justify-between shadow-xs">
+                    <span className="text-[10px] text-muted font-bold uppercase tracking-wider truncate mb-1" title={widget.title}>
+                      {widget.title}
+                    </span>
+                    <span className="text-lg font-extrabold text-foreground tracking-tight block truncate">
+                      {formatNumber(val, metricType, sym)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Charts List (Single Scrollable Stack) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {chartWidgets.map((widget) => {
+              const data = widgetData[widget.id];
+              if (!data || data.length === 0) return null;
+
+              return (
+                <div key={widget.id} className="bg-surface border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between min-h-[360px]">
+                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-4 pb-2 border-b border-border">
+                    {widget.title}
+                  </h3>
+
+                  <div className="h-56 w-full text-[10px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      {widget.type === "line" ? (() => {
+                        const isCurrency = widget.metadata.metricType === "currency";
+                        const sym = isCurrency ? getColCurrencySymbol(widget.metadata.metricColumn || "") : undefined;
+                        const colName = widget.metadata.metricColumn || "";
+                        const displayName = parsedData.schema.find(c => c.columnName === colName)?.displayName || colName;
+
+                        return (
+                          <LineChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                            <XAxis dataKey="date_bucket" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
+                            <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={80} tickFormatter={(v) => formatNumber(v, isCurrency ? "currency" : "number", sym)} />
+                            <Line type="monotone" dataKey="total_val" name={displayName} stroke="var(--accent)" strokeWidth={2} dot={{ r: 2 }} />
+                          </LineChart>
+                        );
+                      })() : (() => {
+                        const colName = widget.metadata.metricColumn || "";
+                        const metricName = widget.metadata.metricColumn
+                          ? (parsedData.schema.find(c => c.columnName === colName)?.displayName || colName)
+                          : "Count";
+                        const isCurrency = widget.metadata.metricType === "currency";
+                        const sym = isCurrency ? getColCurrencySymbol(colName) : undefined;
+                        const metricType = (widget.metadata.metricType as "number" | "currency") || "number";
+
+                        return (
+                          <BarChart data={data}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                            <XAxis dataKey="category" stroke="var(--text-secondary)" tickLine={false} axisLine={false} tickFormatter={(v) => (String(v).length > 12 ? `${String(v).slice(0, 10)}...` : String(v))} />
+                            <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={80} tickFormatter={(v) => formatNumber(v, metricType, sym)} />
+                            <Bar dataKey="val" name={metricName} fill="var(--accent)" radius={[2, 2, 0, 0]} />
+                          </BarChart>
+                        );
+                      })()}
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-border text-xs text-foreground leading-relaxed select-text">
+                    <span className="font-mono text-[9px] text-accent uppercase font-extrabold tracking-widest block mb-1">AI Insights Caption</span>
+                    {explanationsCache[getCacheKey(widget)] || generateLocalHeuristicCaption(widget, data)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in font-sans relative">
 
@@ -807,6 +1217,35 @@ export default function Dashboard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Join Another Dataset or Start over */}
+          {originalParsedData ? (
+            <button
+              onClick={handleRemoveJoin}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 hover:border-rose-500/30 rounded-lg text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
+              title="Remove joined dataset and restore original file state"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Remove Joined Data / Start Over</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => secondFileRef.current?.click()}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-surface border-border hover:bg-surface-subtle text-foreground border rounded-lg text-xs font-medium transition-all focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+              title="Upload another Excel or CSV file to execute a real database JOIN"
+            >
+              <Link2 className="h-3.5 w-3.5 text-accent" />
+              <span>Join Another Dataset</span>
+            </button>
+          )}
+
+          <input
+            type="file"
+            ref={secondFileRef}
+            onChange={handleSecondFileChange}
+            accept=".csv,.xlsx,.xls"
+            className="hidden"
+          />
+
           {/* Add Widget Button */}
           <button
             onClick={() => {
@@ -878,6 +1317,7 @@ export default function Dashboard({
           <button
             onClick={() => setShowAddForm(false)}
             className="absolute top-4 right-4 text-muted hover:text-foreground transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded p-1"
+            aria-label="Close custom widget configuration"
           >
             <X className="h-4 w-4" />
           </button>
@@ -1132,13 +1572,14 @@ export default function Dashboard({
                   className="bg-surface border border-border hover:border-text-secondary/60 rounded-xl p-3.5 flex flex-col justify-between min-w-[150px] lg:w-full shrink-0 shadow-xs relative overflow-hidden transition-all"
                 >
                   <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-1.5 mb-2">
-                    <span className="text-[10px] font-bold text-foreground truncate block uppercase tracking-wider" title={widget.title}>
+                    <span className="text-[10px] font-bold text-foreground truncate block uppercase tracking-wider" title={widget.title} id={`kpi-title-${widget.id}`}>
                       {widget.title}
                     </span>
                     <button
                       onClick={() => removeWidget(widget.id)}
                       className="text-muted hover:text-rose-500 rounded p-0.5 transition"
                       title="Remove KPI"
+                      aria-label={`Delete ${widget.title} KPI metric`}
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -1149,7 +1590,7 @@ export default function Dashboard({
                   ) : errorMsg ? (
                     <span className="text-[9px] text-rose-500 font-mono truncate">{errorMsg}</span>
                   ) : (
-                    <span className="text-lg font-extrabold text-foreground tracking-tight block truncate">
+                    <span className="text-lg font-extrabold text-foreground tracking-tight block truncate font-sans" aria-describedby={`kpi-title-${widget.id}`}>
                       {formatNumber(mainVal, metricType, sym)}
                     </span>
                   )}
@@ -1198,6 +1639,7 @@ export default function Dashboard({
                       disabled={index <= 0}
                       className="p-1 text-muted hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded"
                       title="Move Left"
+                      aria-label="Move widget left or up"
                     >
                       <ChevronUp className="h-3.5 w-3.5 rotate-270" />
                     </button>
@@ -1207,6 +1649,7 @@ export default function Dashboard({
                       disabled={index >= widgets.length - 1}
                       className="p-1 text-muted hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed rounded"
                       title="Move Right"
+                      aria-label="Move widget right or down"
                     >
                       <ChevronDown className="h-3.5 w-3.5 rotate-270" />
                     </button>
@@ -1216,6 +1659,7 @@ export default function Dashboard({
                       onClick={() => removeWidget(activeWidget.id)}
                       className="p-1 text-muted hover:text-rose-500 rounded"
                       title="Delete Widget"
+                      aria-label={`Delete ${activeWidget.title} widget`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -1405,6 +1849,161 @@ export default function Dashboard({
 
       </div>
 
+      {/* 🔗 Join Dataset Confirmation Modal */}
+      {showJoinModal && secondParsed && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in font-sans">
+          <div className="bg-surface border border-border rounded-lg p-5 w-full max-w-lg relative space-y-4 shadow-lg">
+            <button
+              onClick={() => {
+                setShowJoinModal(false);
+                setSecondParsed(null);
+              }}
+              disabled={joining}
+              className="absolute top-4 right-4 text-muted hover:text-foreground disabled:opacity-30 transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded p-1"
+              aria-label="Close Join Modal"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="space-y-1">
+              <h3 className="font-sans text-xs font-bold text-foreground uppercase tracking-wider flex items-center space-x-2">
+                <Link2 className="h-4.5 w-4.5 text-accent" />
+                <span>Execute Database JOIN</span>
+              </h3>
+              <p className="text-[10px] text-muted font-normal">
+                Execute a real-time, in-browser DuckDB join with another dataset. Both tables remain entirely private in browser memory.
+              </p>
+            </div>
+
+            <div className="bg-surface-subtle/50 border border-border rounded-lg p-3 space-y-2 text-xs font-normal">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-muted">Primary Table:</span>
+                <span className="text-foreground font-bold font-mono">{parsedData.fileName}</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-muted">Secondary Table:</span>
+                <span className="text-foreground font-bold font-mono">{secondParsed.fileName}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-normal">
+              {/* Left match column select */}
+              <div className="flex flex-col space-y-1">
+                <label className="font-bold text-muted uppercase tracking-wider text-[9px]">
+                  Left Key ({parsedData.fileName.slice(0, 15)}...)
+                </label>
+                <select
+                  value={leftJoinCol}
+                  onChange={(e) => setLeftJoinCol(e.target.value)}
+                  disabled={joining}
+                  className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  {parsedData.schema.map((col) => (
+                    <option key={col.columnName} value={col.columnName}>
+                      {col.displayName} ({col.currentType})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Right match column select */}
+              <div className="flex flex-col space-y-1">
+                <label className="font-bold text-muted uppercase tracking-wider text-[9px]">
+                  Right Key ({secondParsed.fileName.slice(0, 15)}...)
+                </label>
+                <select
+                  value={rightJoinCol}
+                  onChange={(e) => setRightJoinCol(e.target.value)}
+                  disabled={joining}
+                  className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  {secondParsed.schema.map((col) => (
+                    <option key={col.columnName} value={col.columnName}>
+                      {col.displayName} ({col.currentType})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Join type select */}
+            <div className="flex flex-col space-y-1 text-xs font-normal">
+              <label className="font-bold text-muted uppercase tracking-wider text-[9px]">Join Type</label>
+              <select
+                value={joinType}
+                onChange={(e) => setJoinType(e.target.value as "INNER" | "LEFT")}
+                disabled={joining}
+                className="bg-background border border-border rounded-lg p-2 text-foreground outline-none focus:border-accent cursor-pointer text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <option value="INNER">INNER JOIN (Only rows matching both keys)</option>
+                <option value="LEFT">LEFT JOIN (All rows from left, with optional matches from right)</option>
+              </select>
+            </div>
+
+            {/* Live Count / Warnings */}
+            <div className="pt-1.5 border-t border-border">
+              {joinCount !== null ? (
+                <div className="flex items-center justify-between text-[10px] font-semibold text-foreground font-mono bg-background px-3 py-1.5 rounded-lg border border-border">
+                  <span>Computed Matches:</span>
+                  <span className="text-accent">{joinCount.toLocaleString()} rows</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-1.5 text-[10px] text-muted bg-background px-3 py-1.5 rounded-lg border border-border">
+                  <RefreshCw className="h-3 w-3 animate-spin text-accent" />
+                  <span>Calculating overlapping matches in DuckDB...</span>
+                </div>
+              )}
+            </div>
+
+            {countWarning && (
+              <div className="flex items-start space-x-2 p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-lg text-[10px] leading-relaxed">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>{countWarning}</span>
+              </div>
+            )}
+
+            {joinError && (
+              <div className="flex items-start space-x-2 p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-lg text-[10px] leading-relaxed font-mono">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <span>{joinError}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2 pt-2 border-t border-border">
+              <button
+                type="button"
+                disabled={joining}
+                onClick={() => {
+                  setShowJoinModal(false);
+                  setSecondParsed(null);
+                }}
+                className="px-3.5 py-1.5 bg-background border border-border hover:bg-surface-subtle text-muted hover:text-foreground rounded-lg text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={joining || joinCount === null}
+                onClick={handleExecuteJoin}
+                className="flex items-center space-x-1 px-4 py-1.5 bg-accent hover:opacity-90 disabled:opacity-40 text-white rounded-lg text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                {joining ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Executing JOIN...</span>
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="h-3.5 w-3.5" />
+                    <span>Execute Database JOIN</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 💾 Save Dashboard Modal */}
       {showSaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in">
@@ -1413,6 +2012,7 @@ export default function Dashboard({
               onClick={() => setShowSaveModal(false)}
               disabled={saving}
               className="absolute top-4 right-4 text-muted hover:text-foreground disabled:opacity-30 transition focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none rounded p-1"
+              aria-label="Close save dashboard dialog"
             >
               <X className="h-4 w-4" />
             </button>
