@@ -1,8 +1,15 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Interactive Dashboard — InsightLoop",
-  description: "Explore your custom data, interactive charts, and collaborate with your AI data analyst.",
+  title: "Interactive BI Dashboard — InsightLoop",
+  description: "Collaborate with your local-first AI data analyst, run custom queries, and visualize charts securely.",
+  authors: [{ name: "Ahmad Khan" }],
+  publisher: "Ahmad Khan",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
 };
 
 export default function DashboardDetailLayout({

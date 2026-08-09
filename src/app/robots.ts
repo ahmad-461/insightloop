@@ -6,8 +6,16 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
-      disallow: ["/api/"],
+      allow: [
+        "/",
+        "/about",
+        "/changelog",
+        "/dashboards",
+      ],
+      disallow: [
+        "/api/",
+        "/dashboards/", // Excludes all user-specific saved dashboard detail pages (e.g., /dashboards/[id])
+      ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   };

@@ -893,8 +893,34 @@ function HomeContent() {
   };
 
 
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "InsightLoop",
+    "description": "Secure, browser-first AI Business Intelligence Dashboard. Upload CSV or Excel files, run local DuckDB-WASM SQL queries, and chat with an AI co-pilot with absolute data privacy.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "Secure Client-Side Spreadsheet Parsing & Storage (PapaParse & SheetJS)",
+      "In-Browser DuckDB-WASM Database Engine",
+      "Conversational AI Text-to-SQL Co-Pilot (Google Gemini 2.5 Flash)",
+      "Advanced Statistical Analysis Layer (Trend Forecasting, Outlier Detection, Correlation Analysis)",
+      "High-Fidelity Local PDF Report Generation (jsPDF & html2canvas)",
+      "Persistent Layout Syncing with Supabase"
+    ]
+  };
+
   return (
     <div className="flex-1 w-full max-w-7xl mx-auto px-6 py-6 space-y-12 relative z-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes draw-path {
           from { stroke-dashoffset: 400; }
