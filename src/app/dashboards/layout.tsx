@@ -1,8 +1,13 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Dashboards — InsightLoop",
-  description: "Manage, access, and revisit your saved interactive AI-powered business intelligence dashboards.",
+  title: "Saved BI Dashboards Directory | InsightLoop",
+  description: "Access, sort, and manage your custom local-first AI business intelligence dashboards. Reactivate shared templates securely by matching original data sources.",
+  authors: [{ name: "Ahmad Khan" }],
+  publisher: "Ahmad Khan",
+  alternates: {
+    canonical: "https://insightloop.vercel.app/dashboards",
+  },
 };
 
 export default function DashboardsLayout({

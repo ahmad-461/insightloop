@@ -1,16 +1,22 @@
 import React from "react";
-import { History, GitCommit, ChevronRight } from "lucide-react";
+import { History, GitCommit, ChevronRight, CalendarDays } from "lucide-react";
+import { Metadata } from "next";
 
-export const metadata = {
-  title: "Changelog | InsightLoop",
-  description: "Explore the chronological progress of InsightLoop, tracking iterations, new feature releases, and core performance milestones.",
+export const metadata: Metadata = {
+  title: "Product Changelog & Updates | InsightLoop",
+  description: "Explore the genuine chronological version history and feature development timeline of InsightLoop from v1.0 through v1.6.",
+  authors: [{ name: "Ahmad Khan" }],
+  publisher: "Ahmad Khan",
+  alternates: {
+    canonical: "https://insightloop.vercel.app/changelog",
+  },
 };
 
 const changelogEntries = [
   {
     version: "v1.6",
     title: "AI Demo Playground & Product Tour",
-    date: "Current Release",
+    date: "August 9, 2026",
     bullets: [
       "Added an interactive AI playground so visitors can try the analyst directly with rich preloaded datasets.",
       "Integrated step-by-step contextual feature highlighting for instant onboarding guidance.",
@@ -20,7 +26,7 @@ const changelogEntries = [
   {
     version: "v1.5",
     title: "Command Palette & AI Chart Explanations",
-    date: "Winter 2025",
+    date: "August 8, 2026",
     bullets: [
       "Introduced global Cmd+K searchable control launcher for instant workspace exploration.",
       "Added inline AI translation guides explaining chart visual behaviors in friendly natural language.",
@@ -30,7 +36,7 @@ const changelogEntries = [
   {
     version: "v1.4",
     title: "Premium Enterprise Redesign",
-    date: "Late 2024",
+    date: "August 8, 2026",
     bullets: [
       "Migrated to a refined corporate-grade typography hierarchy using Inter exclusively.",
       "Polished layouts with professional premium gradients and high-fidelity mock dashboards.",
@@ -40,7 +46,7 @@ const changelogEntries = [
   {
     version: "v1.3",
     title: "Layout Persistence & Local PDF Export",
-    date: "Autumn 2024",
+    date: "August 8, 2026",
     bullets: [
       "Added persistent workspace configurations to Supabase, preserving custom column arrangements safely.",
       "Designed dynamic client-side multi-page PDF generation supporting direct local reports.",
@@ -50,7 +56,7 @@ const changelogEntries = [
   {
     version: "v1.2",
     title: "Advanced Python Statistical Engine",
-    date: "Summer 2024",
+    date: "August 6, 2026",
     bullets: [
       "Built a secure backend statistical computation layer for deep analytics.",
       "Introduced automated linear regression forecasting, correlation matrices, and IQR outlier detection.",
@@ -60,7 +66,7 @@ const changelogEntries = [
   {
     version: "v1.1",
     title: "Conversational AI Chat Analyst",
-    date: "Mid 2024",
+    date: "August 6, 2026",
     bullets: [
       "Integrated Gemini 2.5 API as a local conversational analyst executing natural English queries.",
       "Built automatic, self-correcting query correction retries on SQL schema compilation errors.",
@@ -70,7 +76,7 @@ const changelogEntries = [
   {
     version: "v1.0",
     title: "Core Platform Launch",
-    date: "Spring 2024",
+    date: "August 6, 2026",
     bullets: [
       "Launched secure in-memory data processing directly inside local browser sandboxes.",
       "Configured in-browser DuckDB-WASM engine executing analytical queries at native speeds.",
@@ -94,6 +100,10 @@ export default function ChangelogPage() {
         <p className="text-xs sm:text-sm text-muted leading-relaxed">
           Follow our journey as we refine and expand the capabilities of browser-based business intelligence, prioritizing data privacy and performance.
         </p>
+        <div className="flex items-center justify-center space-x-1.5 text-[11px] text-muted font-mono font-bold bg-surface border border-border px-3 py-1 rounded-full w-fit mx-auto shadow-xs">
+          <CalendarDays className="h-3.5 w-3.5 text-accent" />
+          <span>Last updated: August 9, 2026</span>
+        </div>
       </div>
 
       {/* Changelog Timeline */}

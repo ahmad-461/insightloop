@@ -22,8 +22,13 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "InsightLoop — AI Business Intelligence Dashboard",
-  description: "AI-powered business intelligence dashboard where you can upload CSV/Excel files and interact with an AI data analyst.",
+  title: "InsightLoop — Secure Client-Side AI BI Dashboard",
+  description: "InsightLoop is a secure, browser-first AI business intelligence platform. Upload spreadsheets, run local DuckDB WASM analytics, and converse with an AI co-pilot with absolute data privacy.",
+  authors: [{ name: "Ahmad Khan" }],
+  publisher: "Ahmad Khan",
+  alternates: {
+    canonical: "https://insightloop.vercel.app",
+  },
 };
 
 export default function RootLayout({
