@@ -25,8 +25,11 @@ import {
   LayoutDashboard,
   XCircle,
   ArrowRight,
-  Zap
+  Zap,
+  HelpCircle,
+  Sparkles
 } from "lucide-react";
+import ProductTour from "@/components/ProductTour";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
   BarChart,
@@ -45,7 +48,8 @@ import {
   castValue,
   ColumnType,
   ParsedResult,
-  ColumnSchema
+  ColumnSchema,
+  parseRawData
 } from "../utils/parser";
 import { useDuckDB } from "@/context/DuckDBContext";
 import Dashboard from "@/components/Dashboard";
@@ -277,42 +281,50 @@ function ScrollytellingStage3() {
   }, [isInView, typedQuestion]);
 
   return (
-    <div ref={ref} className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-[260px] w-full">
-      <div className="px-4 py-2 bg-surface-subtle border-b border-border flex items-center justify-between font-mono select-none">
-        <span className="text-[9px] text-muted uppercase font-bold tracking-widest">analytical_copilot.sh</span>
-      </div>
-      <div className="flex-1 p-4 flex flex-col justify-between space-y-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-[#38bdf8] font-bold font-mono text-[10px]">$ ask</span>
-          <span className="text-white bg-slate-900 px-3 py-1.5 rounded-lg border border-border font-mono text-[10px] flex-1">
-            {typedQuestion}
-            <span className="animate-pulse">|</span>
-          </span>
+    <div ref={ref} className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col p-5 space-y-4 w-full min-h-[300px] select-none">
+      {/* User Prompt Bubble */}
+      <div className="flex items-start gap-2.5 flex-row-reverse">
+        <div className="h-6 w-6 rounded-full bg-accent text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
+          U
         </div>
+        <div className="bg-accent text-white rounded-2xl rounded-tr-none px-4 py-2.5 text-xs font-medium max-w-[85%] shadow-sm">
+          {typedQuestion}
+          {typedQuestion.length < "Which region grew fastest this quarter?".length && (
+            <span className="border-r-2 border-white ml-0.5 animate-pulse" />
+          )}
+        </div>
+      </div>
 
-        {showAnswer && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4 flex-1 flex flex-col justify-between"
-          >
-            <div className="h-28 w-full text-[8px] select-none">
+      {/* AI Bot Response Bubble */}
+      {showAnswer && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex items-start gap-2.5"
+        >
+          <div className="h-6 w-6 rounded-full bg-surface border border-border text-accent flex items-center justify-center text-[10px] font-bold shrink-0 shadow-sm">
+            AI
+          </div>
+          <div className="bg-background border border-border rounded-2xl rounded-tl-none p-4 space-y-4 flex-1 max-w-[85%] shadow-xs animate-fade-in">
+            {/* Visual Recharts inside the Bot bubble */}
+            <div className="h-32 w-full text-[8px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={REGIONAL_GROWTH}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="region" stroke="var(--text-secondary)" tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--text-secondary)" tickLine={false} axisLine={false} width={25} tickFormatter={(v) => `${v}%`} />
-                  <Tooltip />
                   <Bar dataKey="growth" fill="var(--accent)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="border-l-2 border-accent pl-3 text-[10px] text-foreground italic leading-relaxed">
+
+            <p className="text-xs text-foreground font-normal leading-relaxed border-l-2 border-accent pl-3 italic">
               &quot;The West region led with 68% growth, outpacing all other regions this quarter.&quot;
-            </div>
-          </motion.div>
-        )}
-      </div>
+            </p>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -400,6 +412,8 @@ function HomeContent() {
   const scrollParam = searchParams ? searchParams.get("scroll") : null;
 
   const [parsedData, setParsedData] = useState<ParsedResult | null>(null);
+  const [originalParsedData, setOriginalParsedData] = useState<ParsedResult | null>(null);
+  const [isPlayground, setIsPlayground] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [heroInputFocused, setHeroInputFocused] = useState(false);
@@ -436,6 +450,41 @@ function HomeContent() {
     mediaQuery.addEventListener("change", listener);
     return () => mediaQuery.removeEventListener("change", listener);
   }, []);
+
+  // AI Demo Playground Raw Rows & Loader
+  const PLAYGROUND_RAW_ROWS = [
+    ["Date", "Region", "Category", "Revenue", "Customer_Feedback"],
+    ["2024-01-15", "West", "Software", 15000, "Excellent software solution. The user interface is incredibly fast and clean, and our productivity has soared by 35%!"],
+    ["2024-01-20", "North", "Hardware", 8200, "Hardware components are functional, but the setup manual was confusing and delivery was slightly delayed."],
+    ["2024-02-10", "West", "Services", 12500, "Strategic migration services were outstanding. Highly professional consulting team delivered exceptional architecture on time!"],
+    ["2024-02-18", "East", "Software", 19400, "Outstanding software product. It is super stable, easy to deploy across departments, and has transformed our analytics!"],
+    ["2024-03-05", "South", "Consulting", 9500, "Average consulting engagement. Strategic insights were helpful, but some deliverables lacked deep actionable metrics."],
+    ["2024-03-12", "West", "Software", 26100, "We love the local-first architecture! Data privacy is fully preserved, and the charts load instantly in milliseconds."],
+    ["2024-04-02", "East", "Hardware", 14200, "Solid hardware upgrades. System throughput is improved, though power consumption is slightly higher than expected."],
+    ["2024-04-15", "North", "Services", 16500, "The technical support team was incredibly fast, responsive, and resolved our custom API integration issues in minutes!"],
+    ["2024-05-01", "West", "Software", 34000, "A premier enterprise experience. This application is beautiful, accessible, and provides deep mathematical insights."],
+    ["2024-05-18", "South", "Hardware", 7100, "Poor delivery experience. The shipment box arrived damaged, and customer support was slow to send replacements."],
+    ["2024-06-05", "East", "Services", 22000, "Impressive cloud onboarding. The strategic advisors helped us migrate smoothly without any operational downtime."],
+    ["2024-06-20", "West", "Consulting", 42300, "Superb advisory services! Ahmad Khan and his team redesigned our core pipeline, delivering unbelievable strategic ROI."],
+    ["2024-07-01", "North", "Software", 11000, "Good value software suite. Easy to use, but missing some deep customizable settings for PDF layout exports."],
+    ["2024-07-15", "South", "Services", 13400, "Helpful customer success advisors. Very patient and detailed explanations, though response lag was noticeable during peak hours."],
+    ["2024-08-01", "East", "Software", 28000, "Absolutely amazing local performance. Parsing and loading huge files is seamless, and SQL queries execute instantly!"]
+  ];
+
+  const loadPlaygroundData = () => {
+    setError(null);
+    setReactivateWarning(null);
+    setQueryResults(null);
+    setQueryError(null);
+    const parsed = parseRawData(PLAYGROUND_RAW_ROWS, "regional_sales_sample.csv", 4800);
+    setParsedData(parsed);
+    setIsPlayground(true);
+    // Scroll automatically to active workspace
+    setTimeout(() => {
+      const el = document.getElementById("active-workspace");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
 
   // Handle URL query parameters for scrolling or actions on mount
   useEffect(() => {
@@ -688,6 +737,7 @@ function HomeContent() {
           }
         }
 
+        setOriginalParsedData(null);
         setParsedData(result);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "An unexpected error occurred while parsing.";
@@ -726,6 +776,8 @@ function HomeContent() {
 
   const handleClear = () => {
     setParsedData(null);
+    setOriginalParsedData(null);
+    setIsPlayground(false);
     setError(null);
     setReactivateWarning(null);
     setQueryResults(null);
@@ -1193,6 +1245,21 @@ function HomeContent() {
                     <span className="px-2.5 py-1 text-[10px] font-bold tracking-wider rounded-full border border-accent/20 bg-accent/5 text-accent shadow-2xs font-mono">MAX 5MB</span>
                   </div>
 
+                  <div className="mt-6 pt-4 border-t border-border/50 w-full">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        loadPlaygroundData();
+                      }}
+                      className="inline-flex items-center space-x-1.5 px-4 py-2 bg-accent/10 border border-accent/20 hover:border-accent/40 rounded-xl text-xs text-accent font-bold transition-all hover:bg-accent/15"
+                      title="Launch the Sandbox Playground with Sample Regional Sales Data"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-accent animate-pulse" />
+                      <span>Or, launch the Interactive AI Demo Playground with sample data</span>
+                    </button>
+                  </div>
+
                   {isPending && (
                     <div className="mt-4 flex items-center space-x-2 text-[11px] text-accent font-bold">
                       <RefreshCw className="h-4 w-4 animate-spin" />
@@ -1221,13 +1288,13 @@ function HomeContent() {
           </section>
 
           {/* Pricing commitments & badges section */}
-          <section id="pricing" className="scroll-mt-24 max-w-2xl mx-auto px-4 pt-12">
+          <section id="commitments" className="scroll-mt-24 max-w-2xl mx-auto px-4 pt-12">
             <div className="bg-slate-50/80 dark:bg-slate-900/30 border border-accent/20 dark:border-accent/30 rounded-2xl p-8 sm:p-10 shadow-xl shadow-accent/5 hover:shadow-accent/10 hover:border-accent/40 transition-all text-center space-y-6 relative overflow-hidden group">
               <div className="absolute top-0 left-0 w-full h-1 bg-accent scale-x-0 group-hover:scale-x-100 transition-transform origin-center duration-500" />
 
               <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none z-0 overflow-hidden">
-                <span className="text-accent opacity-[0.04] dark:opacity-[0.06] font-extrabold text-[120px] font-mono tracking-widest uppercase">
-                  FREE
+                <span className="text-accent/5 dark:text-accent-[0.03] font-bold text-[32px] max-w-md uppercase tracking-wide text-center px-4 leading-normal font-sans">
+                  No cost. No lock-in. Your data never leaves your browser.
                 </span>
               </div>
 
@@ -1271,22 +1338,52 @@ function HomeContent() {
         </div>
       )}      {/* Active Workspace Header Bar (when file is successfully parsed) */}
       {parsedData && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6 pt-6">
-          <div>
-            <h1 className="text-2xl font-sans font-bold tracking-tight text-foreground">
-              Interactive Workspace
-            </h1>
-            <p className="text-muted text-xs mt-1">
-              Configure column overrides, query database directly, and consult your custom visual workspace.
-            </p>
+        <div id="active-workspace" className="scroll-mt-24 space-y-6">
+          {/* Playground Banner */}
+          {isPlayground && (
+            <div className="bg-accent/10 border border-accent/20 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-fade-in">
+              <div className="flex items-center space-x-2.5">
+                <Sparkles className="h-4 w-4 text-accent animate-pulse flex-shrink-0" />
+                <span className="text-xs text-foreground font-medium">
+                  You are currently exploring the <strong>AI Demo Playground</strong> with sample regional sales data.
+                </span>
+              </div>
+              <button
+                onClick={handleClear}
+                className="text-xs bg-accent hover:opacity-90 text-white font-semibold px-3 py-1.5 rounded-lg transition-all"
+              >
+                Upload Your Own File
+              </button>
+            </div>
+          )}
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6 pt-6">
+            <div>
+              <div className="flex items-center space-x-3">
+                <h1 className="text-2xl font-sans font-bold tracking-tight text-foreground">
+                  Interactive Workspace
+                </h1>
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent("insightloop-restart-tour"))}
+                  className="p-1 border border-border bg-surface hover:bg-surface-subtle text-muted hover:text-foreground rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-accent"
+                  title="Restart Guided Product Onboarding Tour"
+                  aria-label="Restart Guided Product Tour"
+                >
+                  <HelpCircle className="h-4 w-4 text-accent" />
+                </button>
+              </div>
+              <p className="text-muted text-xs mt-1">
+                Configure column overrides, query database directly, and consult your custom visual workspace.
+              </p>
+            </div>
+            <button
+              onClick={handleClear}
+              className="flex items-center space-x-1.5 px-4 py-2 bg-surface hover:bg-surface-subtle text-rose-500 border border-border rounded-lg text-xs transition-all font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Clear / Upload New</span>
+            </button>
           </div>
-          <button
-            onClick={handleClear}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-surface hover:bg-surface-subtle text-rose-500 border border-border rounded-lg text-xs transition-all font-semibold focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Clear / Upload New</span>
-          </button>
         </div>
       )}
 
@@ -1464,6 +1561,8 @@ function HomeContent() {
               </div>
             </div>
 
+            <ProductTour />
+
             <Dashboard
               parsedData={parsedData}
               datasetLoaded={datasetLoaded}
@@ -1471,6 +1570,10 @@ function HomeContent() {
               onDashboardLoaded={handleDashboardLoaded}
               dashboardId={dashboardId}
               setDashboardId={setDashboardId}
+              originalParsedData={originalParsedData}
+              onOriginalParsedDataChange={setOriginalParsedData}
+              onParsedDataChange={setParsedData}
+              isPlayground={isPlayground}
             />
           </div>
 
